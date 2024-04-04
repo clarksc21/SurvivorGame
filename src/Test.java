@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Test {
     private static final String ANSI_RESET = "\u001B[0m";
@@ -12,20 +13,21 @@ public class Test {
     private static final String ANSI_WHITE = "\u001B[37m";
     private static final String ANSI_BLACK = "\u001B[01m";
     public static void main(String[] args) {
-        ArrayList<String> colors = new ArrayList();
-        colors.add(ANSI_GREEN);
-        colors.add(ANSI_ORANGE);
-        colors.add(ANSI_RED);
-        colors.add(ANSI_YELLOW);
-        colors.add(ANSI_BLUE);
-        colors.add(ANSI_PURPLE);
-        colors.add(ANSI_CYAN);
-        colors.add(ANSI_WHITE);
-        colors.add(ANSI_BLACK);
-        for (String color : colors) {
-            System.out.println(color + "COLOR" + ANSI_RESET);
+        Game g = new Game();
+        Scanner sc = new Scanner(System.in);
+        ArrayList<Player> p = new ArrayList<>();
+        g.setIdol(true);
+        g.setAdvantages(true);
+        g.setR();
+        for (int i = 0; i < 7; i++) {
+            System.out.println("Pick a player");
+            Player pl = new Player();
+            pl.setName(sc.nextLine());
+            p.add(pl);
         }
-        System.out.println(colors.get(3) + "SWAG" + ANSI_RESET);
-        System.out.println(colors.get(5)+ "BEANS" + ANSI_RESET);
+        g.setPlayers(p);
+        for (int i = 0; i < 10; i++) {
+            g.survivorAuction();
+        }
     }
 }

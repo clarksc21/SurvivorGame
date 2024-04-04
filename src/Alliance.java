@@ -46,6 +46,7 @@ public class Alliance {
     public String toString(int numPlayers){
         StringBuilder b  = new StringBuilder();
         for(int i = 0;i<numPlayers;i++){
+
             for(int j = 0; j<numPlayers;j++) {
                 b.append(allianceBoard[i][j] + " ");
             }

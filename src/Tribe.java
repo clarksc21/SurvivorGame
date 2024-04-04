@@ -53,10 +53,6 @@ public class Tribe {
         tribePlayers.add(p);
     }
 
-    public String getTribeName() {
-        return tribeName;
-    }
-
     public void setTribeName(String tribeName) {
         this.tribeName = tribeName;
     }

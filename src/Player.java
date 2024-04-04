@@ -237,7 +237,7 @@ public class Player {
         this.idolCount = 0;
         this.votability = startVotability();
         this.num = num;
-        for(int i = 0;i<8;i++){
+        for(int i = 0;i<10;i++){
             advantages.put(i,0);
         }
     }
@@ -248,6 +248,14 @@ public class Player {
     }
 
     public Player(){
+    }
+
+    public int sumAdv(){
+        int sum = 0;
+        for (int i = 0; i < 10; i++) {
+            sum+=advantages.get(i);
+        }
+        return sum;
     }
 
     public Player(String name){
