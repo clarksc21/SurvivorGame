@@ -1,3 +1,6 @@
+import org.apache.commons.collections4.MultiMap;
+import org.apache.commons.collections4.MultiValuedMap;
+
 import java.io.*;
 import java.sql.Array;
 import java.sql.SQLOutput;
@@ -36,6 +39,7 @@ public class Game  {
     private static boolean Journey = false;
     private static int round = 0;
     private int legacyIdol = 1;
+    private static ArrayList<Alliance> alliances = new ArrayList<>();
     private boolean extraVote = false;
     private boolean SAV = false;
     private boolean SwP = false;
@@ -50,7 +54,7 @@ public class Game  {
     private static boolean advantages = true;
     private ArrayList<String> confessionalSays = new ArrayList<>();
     private static ArrayList<Player> redemptionPlayers = new ArrayList<>();
-    private static Alliance alliance;
+    private static AllianceBoard allianceboard;
     private static boolean EOE = false;
     private Player swap1 = new Player();
     private Player swap2 = new Player();
@@ -92,13 +96,17 @@ public class Game  {
     private HashMap<Integer, String> teamChallenges = new HashMap<>();
     private HashMap<String, String> teamChalDescriptions = new HashMap<>();
     private HashMap<String, String> indChalTypes = new HashMap<>();
+    private HashMap<Player, Integer> ftvotes = new HashMap<>();
+    private HashMap<Player, String> elimvotes = new HashMap<>();
     private Player soleSurvivor = new Player();
     private boolean idolBlock = false;
+    private ArrayList<String> alliancenames = new ArrayList<>();
     private Player secondPlace = new Player();
     private ArrayList<Player> losesVote = new ArrayList<>();
     private Player thirdPlace = new Player();
     private ArrayList<String> tribeNames =new ArrayList<>();
     private HashMap<Player, Integer> immunityWins = new HashMap<>();
+    private HashMap<Player, Integer> rewardWins = new HashMap<>();
     private HashMap<Player, Player> finalTribalVotes = new HashMap<>();
     private HashMap<Player, Player> tribalCouncilVotes = new HashMap<>();
 
@@ -128,7 +136,19 @@ public class Game  {
             if (advChance == 4 && advantages) {
                 a.advantageFind(players.get(r.nextInt(players.size())),false);
             }
+            a.idolAndAdvSummary();
             a.tribalImmunityChallenge();
+            int fa = r.nextInt(10)+1;
+            if(fa > 7){
+                a.formAlliance(tribes.get(r.nextInt(tribes.size())));
+            }else if(fa == 5){
+                if(alliances.size()>1) {
+                    a.allianceDissolve(alliances.get(r.nextInt(alliances.size())));
+                }else if(alliances.size()==1){
+                    a.allianceDissolve(alliances.get(0));
+                }
+            }
+            a.allianceSummary();
             a.confessional();
             int ImmuneChance = r.nextInt(5)+1;
             if (ImmuneChance == 4 && Idol) {
@@ -182,7 +202,19 @@ public class Game  {
                 if (advChance == 4 && players.size() > 4 && advantages) {
                     a.advantageFind(players.get(r.nextInt(players.size())),false);
                 }
+                a.idolAndAdvSummary();
                 a.splitImmunityChallenge();
+                int fa = r.nextInt(10)+1;
+                if(fa > 7){
+                    a.formAlliance(tribes.get(r.nextInt(tribes.size())));
+                }else if(fa == 5){
+                    if(alliances.size()>1) {
+                        a.allianceDissolve(alliances.get(r.nextInt(alliances.size())));
+                    }else if(alliances.size()==1){
+                        a.allianceDissolve(alliances.get(0));
+                    }
+                }
+                a.allianceSummary();
                 a.confessional();
             }
             else {
@@ -190,7 +222,19 @@ public class Game  {
                 if (advChance == 4 && players.size() > 4 && advantages) {
                     a.advantageFind(players.get(r.nextInt(players.size())),false);
                 }
+                a.idolAndAdvSummary();
                 a.individualImmunityChallenge();
+                int fa = r.nextInt(10)+1;
+                if(fa > 7){
+                    a.formAlliance(tribes.get(r.nextInt(tribes.size())));
+                }else if(fa == 5){
+                    if(alliances.size()>1) {
+                        a.allianceDissolve(alliances.get(r.nextInt(alliances.size())));
+                    }else if(alliances.size()==1){
+                        a.allianceDissolve(alliances.get(0));
+                    }
+                }
+                a.allianceSummary();
                 a.confessional();
                 int ImmuneChance = r.nextInt(5)+1;
                 if (ImmuneChance == 4 && players.size() > 4 && Idol) {
@@ -205,21 +249,27 @@ public class Game  {
             }
         }
         if (RI) {
+            a.idolAndAdvSummary();
             a.individualImmunityChallenge();
+            a.allianceSummary();
             a.confessional();
             a.tribalCouncil(losingTribe);
             System.out.println(tribes.get(0).toString());
         }
         if (EOE) {
             a.edgeOfExtinction();
+            a.idolAndAdvSummary();
             a.individualImmunityChallenge();
+            a.allianceSummary();
             a.confessional();
             a.tribalCouncil(losingTribe);
             System.out.println(tribes.get(0).toString());
         }
         if (twoOrThree) {
             while(players.size()>2) {
+                a.idolAndAdvSummary();
                 a.individualImmunityChallenge();
+                a.allianceSummary();
                 a.confessional();
                 a.tribalCouncil(losingTribe);
                 System.out.println(tribes.get(0).toString());
@@ -230,7 +280,9 @@ public class Game  {
             a.juryfix();
             a.finalTribal();
         } else {
+            a.idolAndAdvSummary();
             a.individualImmunityChallenge();
+            a.allianceSummary();
             a.confessional();
             a.fireMakingChallenge(tribes.get(0));
             System.out.println(tribes.get(0).toString());
@@ -244,12 +296,14 @@ public class Game  {
         a.finalTribalVotes();
         a.placements();
         a.immunityWins();
+        a.rewardWins();
+        a.challengeWins();
         a.totals();
         a.fanFavorite();
         a.playerAttributes();
         a.votability();
         a.votesAgainst();
-        System.out.println(alliance.toString(numPlayers));
+        System.out.println(allianceboard.toString(numPlayers));
     }
 
     public Player getSoleSurvivor() {
@@ -284,6 +338,8 @@ public class Game  {
             if (advChance == 4 && advantages) {
                 a.advantageFind(players.get(r.nextInt(players.size())),false);
             }
+            a.idolAndAdvSummary();
+            a.allianceSummary();
             a.tribalImmunityChallenge();
             a.confessional();
             int ImmuneChance = r.nextInt(5)+1;
@@ -335,6 +391,8 @@ public class Game  {
                 if (advChance == 4 && players.size() > 4 && advantages) {
                     a.advantageFind(players.get(r.nextInt(players.size())),false);
                 }
+                a.idolAndAdvSummary();
+                a.allianceSummary();
                 a.splitImmunityChallenge();
                 a.confessional();
             }
@@ -343,6 +401,8 @@ public class Game  {
                 if (advChance == 4 && players.size() > 4 && advantages) {
                     a.advantageFind(players.get(r.nextInt(players.size())),false);
                 }
+                a.idolAndAdvSummary();
+                a.allianceSummary();
                 a.individualImmunityChallenge();
                 a.confessional();
                 int ImmuneChance = r.nextInt(5)+1;
@@ -358,6 +418,8 @@ public class Game  {
             }
         }
         if (RI) {
+            a.idolAndAdvSummary();
+            a.allianceSummary();
             a.individualImmunityChallenge();
             a.confessional();
             a.tribalCouncil(losingTribe);
@@ -365,6 +427,8 @@ public class Game  {
         }
         if (EOE) {
             a.edgeOfExtinction();
+            a.idolAndAdvSummary();
+            a.allianceSummary();
             a.individualImmunityChallenge();
             a.confessional();
             a.tribalCouncil(losingTribe);
@@ -372,6 +436,8 @@ public class Game  {
         }
         if (twoOrThree) {
             while(players.size()>2) {
+                a.idolAndAdvSummary();
+                a.allianceSummary();
                 a.individualImmunityChallenge();
                 a.confessional();
                 a.tribalCouncil(losingTribe);
@@ -382,6 +448,8 @@ public class Game  {
             a.juryfix();
             a.finalTribal();
         } else {
+            a.idolAndAdvSummary();
+            a.allianceSummary();
             a.individualImmunityChallenge();
             a.confessional();
             a.fireMakingChallenge(tribes.get(0));
@@ -394,12 +462,14 @@ public class Game  {
         a.finalTribalVotes();
         a.placements();
         a.immunityWins();
+        a.rewardWins();
+        a.challengeWins();
         a.totals();
         a.fanFavorite();
         a.playerAttributes();
         a.votability();
         a.votesAgainst();
-        System.out.println(alliance.toString(numPlayers));
+        System.out.println(allianceboard.toString(numPlayers));
             }
 
     public void final3tribal() {
@@ -412,18 +482,22 @@ public class Game  {
         System.out.println("Jeff Probst: Goodluck!");
         System.out.println();
         System.out.println("Jeff Probst: I'll Read The Votes");
+        System.out.println();
         for (Player player : jury) {
             int finalVote = r.nextInt(tribes.get(0).getTribePlayers().get(0).getScore() + tribes.get(0).getTribePlayers().get(1).getScore() + tribes.get(0).getTribePlayers().get(2).getScore());
             if (finalVote < tribes.get(0).getTribePlayers().get(0).getScore()) {
                 finalTribalVotes.put(player, tribes.get(0).getTribePlayers().get(0));
+                ftvotes.put(tribes.get(0).getTribePlayers().get(0),ftvotes.getOrDefault(tribes.get(0).getTribePlayers().get(0),0)+1);
                 votesForOne++;
                 //System.out.println("Jeff Probst: That's " + votesForOne + " votes for " + tribes.get(0).getTribePlayers().get(0));
             } else if (finalVote < tribes.get(0).getTribePlayers().get(1).getScore() + tribes.get(0).getTribePlayers().get(0).getScore()) {
                 finalTribalVotes.put(player, tribes.get(0).getTribePlayers().get(1));
+                ftvotes.put(tribes.get(0).getTribePlayers().get(1),ftvotes.getOrDefault(tribes.get(0).getTribePlayers().get(1),0)+1);
                 votesForTwo++;
                 //System.out.println("Jeff Probst: That's " + votesForTwo + " votes for " + tribes.get(0).getTribePlayers().get(1));
             } else {
                 finalTribalVotes.put(player, tribes.get(0).getTribePlayers().get(2));
+                ftvotes.put(tribes.get(0).getTribePlayers().get(2),ftvotes.getOrDefault(tribes.get(0).getTribePlayers().get(2),0)+1);
                 votesForThree++;
                 //System.out.println("Jeff Probst: That's " + votesForThree + " votes for " + tribes.get(0).getTribePlayers().get(2));
             }
@@ -465,9 +539,11 @@ public class Game  {
             System.out.println("Jeff Probst: I'll read the last vote.");
             if (lVote == 0) {
                 System.out.println("Jeff Probst: " + tribes.get(0).getTribePlayers().get(0));
+                ftvotes.put(tribes.get(0).getTribePlayers().get(0),ftvotes.getOrDefault(tribes.get(0).getTribePlayers().get(0),0)+1);
                 votesForOne++;
             } else {
                 System.out.println("Jeff Probst: " + tribes.get(0).getTribePlayers().get(1));
+                ftvotes.put(tribes.get(0).getTribePlayers().get(1),ftvotes.getOrDefault(tribes.get(0).getTribePlayers().get(1),0)+1);
                 votesForTwo++;
             }
         } else if (votesForOne == votesForThree && votesForThree > votesForTwo) {
@@ -478,8 +554,10 @@ public class Game  {
             if (lVote == 0) {
                 System.out.println("Jeff Probst: " + tribes.get(0).getTribePlayers().get(0));
                 votesForOne++;
+                ftvotes.put(tribes.get(0).getTribePlayers().get(0),ftvotes.getOrDefault(tribes.get(0).getTribePlayers().get(0),0)+1);
             } else {
                 System.out.println("Jeff Probst: " + tribes.get(0).getTribePlayers().get(2));
+                ftvotes.put(tribes.get(0).getTribePlayers().get(2),ftvotes.getOrDefault(tribes.get(0).getTribePlayers().get(2),0)+1);
                 votesForThree++;
             }
         } else if (votesForTwo == votesForThree && votesForThree > votesForOne) {
@@ -489,9 +567,11 @@ public class Game  {
             System.out.println("Jeff Probst: I'll read the last vote.");
             if (lVote == 0) {
                 System.out.println("Jeff Probst: " + tribes.get(0).getTribePlayers().get(2));
+                ftvotes.put(tribes.get(0).getTribePlayers().get(2),ftvotes.getOrDefault(tribes.get(0).getTribePlayers().get(2),0)+1);
                 votesForThree++;
             } else {
                 System.out.println("Jeff Probst: " + tribes.get(0).getTribePlayers().get(1));
+                ftvotes.put(tribes.get(0).getTribePlayers().get(1),ftvotes.getOrDefault(tribes.get(0).getTribePlayers().get(1),0)+1);
                 votesForTwo++;
             }
         }
@@ -623,7 +703,29 @@ public class Game  {
             System.out.println("-------------------------");
             System.out.println();
         }
-        p.setIdolCount(p.getIdolCount() + 1);
+        p.setIdolCount(1);
+        p.setMorale(p.getMorale()+2);
+    }
+
+    public void formAlliance(Tribe t) throws FileNotFoundException {
+        String name = alliancenames.get(r.nextInt(alliancenames.size()));
+        Alliance a = new Alliance(name);
+        alliancenames.remove(name);
+        alliances.add(a);
+        int size = r.nextInt(4)+2;
+        Player potentialadd = t.getTribePlayers().get(r.nextInt(t.getTribePlayers().size()));
+        for(int i = 0; i<size;i++){
+            while(a.getMembers().contains(potentialadd)){
+                potentialadd = t.getTribePlayers().get(r.nextInt(t.getTribePlayers().size()));
+            }
+            a.addMember(potentialadd);
+        }
+        System.out.println("A New Alliance has formed: The " + a.getName() + " Alliance." );
+        System.out.println("It consists of: " + a.memberPrint());
+        System.out.println("This Alliance originated on the " + t.getColor() + t.tribeName() + ANSI_RESET + " Tribe");
+        System.out.println();
+        System.out.println("-------------------------");
+        System.out.println();
     }
 
     public void advantageFind(Player p, boolean auction) {
@@ -915,6 +1017,11 @@ public class Game  {
         colors.add(ANSI_PINK);
         colors.add(ANSI_LIME);
         colors.add(ANSI_MAROON);
+        FileInputStream fs = new FileInputStream("alliancenames.txt");
+        Scanner s = new Scanner(fs);
+        while(s.hasNextLine()){
+            alliancenames.add(s.nextLine());
+        }
         FileInputStream team = new FileInputStream("teamChallenges.txt");
         Scanner tchals = new Scanner(team);
         int o = 0;
@@ -1001,8 +1108,9 @@ public class Game  {
                 Player a = new Player(name, i);
                 players.add(a);
             }
-            alliance = new Alliance(numPlayers);
+            allianceboard = new AllianceBoard(numPlayers);
             playerStorage.addAll(players);
+            allianceboard.setNames(playerStorage);
             System.out.println("Jeff Probst: Here are your players: ");
             for (Player player : players) {
                 System.out.print(player.getName() + ", ");
@@ -1039,7 +1147,7 @@ public class Game  {
                     System.out.println("Jeff Probst: Please enter 16, 18, or 20");
                     numPlayers = sc.nextInt();
                 }
-                alliance = new Alliance(numPlayers);
+                allianceboard = new AllianceBoard(numPlayers);
                 System.out.println("Jeff Probst: Would you like tribe swaps?");
                 String TS = sc.next();
                 tribeSwap = TS.equals("YES") || TS.equals("yes");
@@ -1114,6 +1222,7 @@ public class Game  {
                         FR = true;
                         voteSwap = true;
                         SwP = true;
+                        advantages = true;
                     }else {
                         extraVote = false;
                         SAV = false;
@@ -1140,6 +1249,7 @@ public class Game  {
                 }
                 playerStorage.addAll(players);
                 System.out.println("Jeff Probst: Here are your players: ");
+                allianceboard.setNames(playerStorage);
                 for (Player player : players) {
                     System.out.print(player.getName() + ", ");
                 }
@@ -1229,7 +1339,7 @@ public class Game  {
                                 sc.nextLine();
                                 sc.nextLine();
                             }
-                            alliance = new Alliance(numPlayers);
+                            allianceboard = new AllianceBoard(numPlayers);
                             System.out.println("Would you like to name players or auto?");
                             String bug = sc.nextLine();
                             boolean auto = bug.equals("auto");
@@ -1256,6 +1366,7 @@ public class Game  {
                             }
                             playerStorage.addAll(players);
                             System.out.println("Jeff Probst: Here are your players: ");
+                            allianceboard.setNames(playerStorage);
                             for (Player player : players) {
                                 System.out.print(player.getName() + ", ");
                             }
@@ -1348,6 +1459,7 @@ public class Game  {
                                     FR = true;
                                     voteSwap = true;
                                     SwP = true;
+                                    advantages = true;
                                 }else {
                                     extraVote = false;
                                     SAV = false;
@@ -1509,7 +1621,7 @@ public class Game  {
                     System.out.println("Jeff Probst: Please enter 16, 18, or 20");
                     numPlayers = sc.nextInt();
                 }
-                alliance = new Alliance(numPlayers);
+                allianceboard = new AllianceBoard(numPlayers);
                 System.out.println("Jeff Probst: Would you like tribe swaps?");
                 String TS = sc.next();
                 tribeSwap = TS.equals("YES") || TS.equals("yes");
@@ -1584,6 +1696,7 @@ public class Game  {
                         FR = true;
                         voteSwap = true;
                         SwP = true;
+                        advantages = true;
                     }else {
                         extraVote = false;
                         SAV = false;
@@ -1612,6 +1725,7 @@ public class Game  {
                 players.add(Sam);
                 playerStorage.addAll(players);
                 System.out.println("Jeff Probst: Here are your players: ");
+                allianceboard.setNames(playerStorage);
                 for (Player player : players) {
                     System.out.print(player.getName() + ", ");
                 }
@@ -1698,7 +1812,7 @@ public class Game  {
                                 System.out.println("Jeff Probst: Please enter 16, 18, or 20");
                                 numPlayers = sc.nextInt();
                             }
-                            alliance = new Alliance(numPlayers);
+                            allianceboard = new AllianceBoard(numPlayers);
                         }
                         case 3 -> {
                             System.out.println("Jeff Probst: Would you like tribe swaps?");
@@ -1787,6 +1901,7 @@ public class Game  {
                                     FR = true;
                                     voteSwap = true;
                                     SwP = true;
+                                    advantages = true;
                                 }else {
                                     extraVote = false;
                                     SAV = false;
@@ -1826,6 +1941,7 @@ public class Game  {
                             }
                             playerStorage.addAll(players);
                             System.out.println("Jeff Probst: Here are your players: ");
+                            allianceboard.setNames(playerStorage);
                             for (Player player : players) {
                                 System.out.print(player.getName() + ", ");
                             }
@@ -1948,7 +2064,7 @@ public class Game  {
                     System.out.println("Jeff Probst: Please enter 16, 18, or 20");
                     numPlayers = sc.nextInt();
                 }
-                alliance = new Alliance(numPlayers);
+                allianceboard = new AllianceBoard(numPlayers);
                 System.out.println("Jeff Probst: Would you like tribe swaps?");
                 String TS = sc.next();
                 tribeSwap = TS.equals("YES") || TS.equals("yes");
@@ -2023,6 +2139,7 @@ public class Game  {
                         FR = true;
                         voteSwap = true;
                         SwP = true;
+                        advantages = true;
                     }else {
                         extraVote = false;
                         SAV = false;
@@ -2060,6 +2177,7 @@ public class Game  {
                 }
                 playerStorage.addAll(players);
                 System.out.println("Jeff Probst: Here are your players: ");
+                allianceboard.setNames(playerStorage);
                 for (Player player : players) {
                     System.out.print(player.getName() + ", ");
                 }
@@ -2195,7 +2313,7 @@ public class Game  {
                                 System.out.println("Jeff Probst: Please enter 16, 18, or 20");
                                 numPlayers = sc.nextInt();
                             }
-                            alliance = new Alliance(numPlayers);
+                            allianceboard = new AllianceBoard(numPlayers);
                         }
                         case 3 -> {
                             System.out.println("Jeff Probst: Would you like tribe swaps?");
@@ -2284,6 +2402,7 @@ public class Game  {
                                     FR = true;
                                     voteSwap = true;
                                     SwP = true;
+                                    advantages = true;
                                 }else {
                                     extraVote = false;
                                     SAV = false;
@@ -2323,6 +2442,7 @@ public class Game  {
                             }
                             playerStorage.addAll(players);
                             System.out.println("Jeff Probst: Here are your players: ");
+                            allianceboard.setNames(playerStorage);
                             for (Player player : players) {
                                 System.out.print(player.getName() + ", ");
                             }
@@ -2503,9 +2623,10 @@ public class Game  {
         Player loser = fire.get(loserNum);
         Player winner = fire.get(winNum);
         System.out.println("Jeff Probst: Congratulations " + winner + ", you have made fire and survive!");
-        winner.setScore(winner.getScore() + 3);
+        winner.setScore(3);
         System.out.println("Jeff Probst: " + loser + ", unfortunately your game will come short. Please bring me your torch.");
         System.out.println("Jeff Probst: " + loser + " the Tribe has Spoken");
+        elimvotes.put(loser," -> Lost Fire Making");
         ArrayList<Player> final3 = new ArrayList<>();
         for (int i = 0; i < final4.getTribePlayers().size(); i++) {
             if (!final4.getTribePlayers().get(i).equals(loser)) {
@@ -2515,12 +2636,20 @@ public class Game  {
         /*Scores a = new Scores(loser.getScore(),loser,4);
         totals.add(a);*/
         eliminated.add(loser);
+        for(Alliance a: alliances){
+            a.removeMember(loser);
+        }
         jury.add(loser);
         tribes.get(0).setTribePlayers(final3);
     }
 
     public void merge() {
         Tribe merge;
+        for(Tribe t: tribes){
+            for(Player p: t.getTribePlayers()){
+                p.setLastTribeColor(t.getColor());
+            }
+        }
         merged = true;
         Scanner sc = new Scanner(System.in);
         ArrayList<Player> mergeSet = new ArrayList<>();
@@ -2568,7 +2697,7 @@ public class Game  {
         System.out.println("Jeff Probst: I'll take back immunity");
         System.out.println("Jeff Probst: Once again, individual immunity is back up for grabs");
         chalName = indChallenges.get(r.nextInt(indChallenges.size()));
-        if(championAdv && players.size()<12 && championUser != null && players.contains(championUser)){
+        if(championAdv && merged && championUser != null && players.contains(championUser)){
             System.out.println(championUser + ": I found the Choose Your Champion Advantage earlier today and would like to use it.");
             System.out.println("Jeff Probst: This is the Choose Your Champion Advantage.");
             System.out.println("Jeff Probst: If "+ championUser + " bets on the right survivor, they also win immunity.");
@@ -2582,12 +2711,12 @@ public class Game  {
         switch (type) {
             case "Balance" -> {
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    total = tribes.get(0).getTribePlayers().get(i).getBalance() + total;
+                    total = tribes.get(0).getTribePlayers().get(i).getBalance()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    picker = tribes.get(0).getTribePlayers().get(i).getBalance() + picker;
+                    picker = tribes.get(0).getTribePlayers().get(i).getBalance()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -2596,12 +2725,12 @@ public class Game  {
             }
             case "Strength" -> {
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    total = tribes.get(0).getTribePlayers().get(i).getStrength() + total;
+                    total = tribes.get(0).getTribePlayers().get(i).getStrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    picker = tribes.get(0).getTribePlayers().get(i).getStrength() + picker;
+                    picker = tribes.get(0).getTribePlayers().get(i).getStrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -2610,12 +2739,12 @@ public class Game  {
             }
             case "Strategy" -> {
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    total = tribes.get(0).getTribePlayers().get(i).getStrategy() + total;
+                    total = tribes.get(0).getTribePlayers().get(i).getStrategy()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    picker = tribes.get(0).getTribePlayers().get(i).getStrategy() + picker;
+                    picker = tribes.get(0).getTribePlayers().get(i).getStrategy()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -2624,12 +2753,12 @@ public class Game  {
             }
             case "Balance and Strength" -> {
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    total = tribes.get(0).getTribePlayers().get(i).balnstrength() + total;
+                    total = tribes.get(0).getTribePlayers().get(i).balnstrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    picker = tribes.get(0).getTribePlayers().get(i).balnstrength() + picker;
+                    picker = tribes.get(0).getTribePlayers().get(i).balnstrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -2638,12 +2767,12 @@ public class Game  {
             }
             case "Balance and Strategy" -> {
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    total = tribes.get(0).getTribePlayers().get(i).balnstrat() + total;
+                    total = tribes.get(0).getTribePlayers().get(i).balnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    picker = tribes.get(0).getTribePlayers().get(i).balnstrat() + picker;
+                    picker = tribes.get(0).getTribePlayers().get(i).balnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -2652,12 +2781,12 @@ public class Game  {
             }
             case "Strength and Strategy" -> {
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    total = tribes.get(0).getTribePlayers().get(i).strengthnstrat() + total;
+                    total = tribes.get(0).getTribePlayers().get(i).strengthnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < tribes.get(0).getTribePlayers().size(); i++) {
-                    picker = tribes.get(0).getTribePlayers().get(i).strengthnstrat() + picker;
+                    picker = tribes.get(0).getTribePlayers().get(i).strengthnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -2670,13 +2799,20 @@ public class Game  {
         System.out.println("Jeff Probst: Survivors ready, GO!!!");
         System.out.println("Jeff Probst: " + ANSI_GOLD + immune + ANSI_RESET + " wins immunity and is safe tonight at Tribal Council");
         tribes.get(0).getTribePlayers().get(numImmune).setImmune(true);
-        tribes.get(0).getTribePlayers().get(numImmune).setVotability(immune.getVotability() + 1);
-        tribes.get(0).getTribePlayers().get(numImmune).setScore(tribes.get(0).getTribePlayers().get(numImmune).getScore() + 4);
-        tribes.get(0).getTribePlayers().get(numImmune).setImmWins(tribes.get(0).getTribePlayers().get(numImmune).getImmWins() + 1);
+        tribes.get(0).getTribePlayers().get(numImmune).setThreatlvl(5);
+        tribes.get(0).getTribePlayers().get(numImmune).setScore(4);
+        tribes.get(0).getTribePlayers().get(numImmune).setImmWins(1);
         immunityWins.put(tribes.get(0).getTribePlayers().get(numImmune), tribes.get(0).getTribePlayers().get(numImmune).getImmWins());
         System.out.println("Jeff Probst: For the rest of you, one of you will be sent home tonight and become the next member of the Jury");
         System.out.println("Jeff Probst: Head back to camp, I'll see you tonight");
         losingTribe = tribes.get(0);
+        for(Player p : tribes.get(0).getTribePlayers()){
+            if(!p.equals(immune)){
+                p.setMorale(p.getMorale()-1);
+            }else{
+                p.setMorale(p.getMorale()+3);
+            }
+        }
         System.out.println();
         System.out.println("-------------------------");
         System.out.println();
@@ -2797,15 +2933,15 @@ public class Game  {
         for (int i = 0; i < copy.size(); i++) {
             if (copy.get(i)!=losingTribe) {
                 for(Player player:copy.get(i).getTribePlayers()){
-                    player.setScore(player.getScore()+1);
+                    player.setScore(2);
                     player.setImmune(true);
                 }
-                System.out.println("Jeff Probst: " + copy.get(i).getTribePlayers().toString() + " you have earned the merge!");
+                System.out.println("Jeff Probst: " +ANSI_GOLD + copy.get(i).getTribePlayers().toString() + ANSI_RESET + " you have earned the merge!");
             }
         }
         if(pick!=losingTribe){
             System.out.println("Jeff Probst: " + oddmanout + ", you picked the right team, you also have earned the merge!");
-            oddmanout.setScore(oddmanout.getScore()+1);
+            oddmanout.setScore(1);
             oddmanout.setImmune(true);
         }else{
             System.out.println("Jeff Probst: " + oddmanout + ", you picked the wrong group, you have not earned the merge.");
@@ -2912,7 +3048,12 @@ public class Game  {
                 System.out.println("Jeff Probst: " + tribes.get(i).getColor() + tribes.get(i).tribeName() + ANSI_RESET + " wins immunity!");
                 tribes.get(i).setBoost(5);
                 for(Player player:tribes.get(i).getTribePlayers()){
-                    player.setScore(player.getScore()+1);
+                    player.setScore(2);
+                    player.setMorale(player.getMorale()+2);
+                }
+            }else{
+                for(Player player:tribes.get(i).getTribePlayers()){
+                    player.setMorale(player.getMorale()-1);
                 }
             }
         }
@@ -2947,6 +3088,9 @@ public class Game  {
             votedOutLast = out;
             exit(out);
             eliminated.add(out);
+            for(Alliance a: alliances){
+                a.removeMember(out);
+            }
             /*Scores p = new Scores(out.getScore(), out, players.size());
             totals.add(p);*/
             players.remove(out);
@@ -2965,7 +3109,7 @@ public class Game  {
             Player vote = new Player();
             for (int j = 0; j < losers.getTribePlayers().size(); j++) {
                 if (voteCaster != losers.getTribePlayers().get(j)) {
-                    s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * alliance.getSpot(losers.getTribePlayers().get(j).getNum(), voteCaster.getNum())));
+                    s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), voteCaster.getNum())));
                 }
             }
             vote = s.spin();
@@ -2974,8 +3118,12 @@ public class Game  {
             System.out.println("Jeff Probst: The " + placement + "th and final person voted out of Survivor: " + ANSI_RED + vote + ANSI_RESET);
             vote.setVotesAgainst();
             exit(vote);
-            alliance.setSpot(voteCaster.getNum(), vote.getNum(), alliance.getSpot(voteCaster.getNum(), vote.getNum()) + 1);
+            allianceboard.setSpot(voteCaster.getNum(), vote.getNum(), allianceboard.getSpot(voteCaster.getNum(), vote.getNum()) + 2);
             eliminated.add(vote);
+            for(Alliance a: alliances){
+                a.removeMember(vote);
+            }
+            elimvotes.put(vote, " -> 1");
             players.remove(vote);
             jury.add(vote);
             losers.getTribePlayers().remove(vote);
@@ -2983,6 +3131,7 @@ public class Game  {
         } else {
             boolean ChampRight = false;
             ArrayList<Player> safe = new ArrayList<>();
+            String tied = "";
             HashMap<Player, Integer> votes = new HashMap<>();
             ArrayList<Player> voteCnt = new ArrayList<>();
             Player match = new Player();
@@ -3012,7 +3161,7 @@ public class Game  {
                             ev = true;
                             advName.put(player, "Extra");
                             player.setAdvantages(1, player.getAdvantages(1) - 1);
-                            player.setScore(player.getScore() + 3);
+                            player.setScore(3);
                             played = true;
                         }else{
                             asel--;
@@ -3025,8 +3174,9 @@ public class Game  {
                             }
                             System.out.println(player + ": I'd like to play my Vote Blocker on " + lostVote);
                             losesVote.add(lostVote);
+                            lostVote.setCanVote(false);
                             player.setAdvantages(2, player.getAdvantages(2) - 1);
-                            player.setScore(player.getScore() + 3);
+                            player.setScore(3);
                             played = true;
                         }else{
                             asel--;
@@ -3038,11 +3188,12 @@ public class Game  {
                                 lostVote = losers.getTribePlayers().get(r.nextInt(losers.getTribePlayers().size()));
                             }
                             System.out.println(player + ": I'd like to play my Steal A Vote on " + lostVote);
+                            lostVote.setCanVote(false);
                             losesVote.add(lostVote);
                             ev = true;
                             advName.put(player, "Steal");
                             player.setAdvantages(3, player.getAdvantages(3) - 1);
-                            player.setScore(player.getScore() + 4);
+                            player.setScore(4);
                             played = true;
                         }else{
                             asel--;
@@ -3068,7 +3219,7 @@ public class Game  {
                             legacy = player;
                             safe.add(legacy);
                             legacyUsable = true;
-                            player.setScore(player.getScore() + 4);
+                            player.setScore(4);
                             played = true;
                         }else{
                             asel--;
@@ -3080,7 +3231,7 @@ public class Game  {
                             System.out.println("Jeff Probst: This is the Force Rocks Advantage, " + player + " will now be safe, and the rest of you will draw rocks.");
                             safe.add(player);
                             rocks(safe, losingTribe.getTribePlayers());
-                            player.setScore(player.getScore() + 3);
+                            player.setScore(3);
                             FRUsable = false;
                             round++;
                             player.setAdvantages(7, player.getAdvantages(7) - 1);
@@ -3096,12 +3247,13 @@ public class Game  {
                         }else{
                             asel--;
                         }
-                    } else if (player.getAdvantages(9) > 0 && !played) {
+                    } else if (player.getAdvantages(9) > 0 && !played && !safe.contains(player)) {
                         if(asel == 0) {
                             System.out.println(player + ": I would like to play my Safety without Power Advantage!");
+                            player.setCanVote(false);
                             losesVote.add(player);
                             player.setImmune(true);
-                            player.setScore(player.getScore() + 1);
+                            player.setScore(3);
                             player.setAdvantages(9, player.getAdvantages(9) - 1);
                             System.out.println("Jeff Probst: " + player + " will now leave Tribal Council and not vote.");
                             played = true;
@@ -3120,13 +3272,13 @@ public class Game  {
                 if ((player.getVotability() > avgVotability(losers.getTribePlayers()) + 2.15 || players.size() == player.getIdolCount() + 4) && player.getIdolCount() > 0 && !player.isImmune() && numPlayers - eliminated.size() > 4) {
                     idolPlayers.add(player);
                     safe.add(player);
-                    player.setIdolCount(player.getIdolCount() - 1);
+                    player.setIdolCount(-1);
                 }
             }
             int total = 0;
             for (int i = 0; i < losers.getTribePlayers().size(); i++) {
                 if (!losers.getTribePlayers().get(i).isImmune()) {
-                    total = total + losers.getTribePlayers().get(i).getVotability();//* alliance.getSpot(0,losers.getTribePlayers().get(i).getNum());
+                    total = total + losers.getTribePlayers().get(i).getVotability();//* allianceboard.getSpot(0,losers.getTribePlayers().get(i).getNum());
                 }
             }
             Player vote = new Player();
@@ -3137,19 +3289,30 @@ public class Game  {
                 }*/
                 WeightedSpinner<Player> s = new WeightedSpinner<>();
                 for (int j = 0; j < losers.getTribePlayers().size(); j++) {
-                    if (i != j && !losers.getTribePlayers().get(j).isImmune()) {
-                        //         alvotes += (losers.getTribePlayers().get(j).getVotability() * alliance.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum()));
-                        s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * alliance.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum())));
+                    if (i != j && !losers.getTribePlayers().get(j).isImmune() && (!losers.getTribePlayers().get(j).isInAllianceWith(losers.getTribePlayers().get(i)) || losers.getTribePlayers().get(i).getTargets().contains(losers.getTribePlayers().get(j)))) {
+                        if(losers.getTribePlayers().get(i).getTargets().contains(losers.getTribePlayers().get(j))){
+                            s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * 10 *allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum())));
+                        }else {
+                            //         alvotes += (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum()));
+                            s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum())));
+                        }
                     }
 //                    vt = r.nextInt(alvotes);
                 }
                 if (losers.getTribePlayers().get(i).isImmune()) {
                     safe.add(losers.getTribePlayers().get(i));
                 }
+                if(s.size() == 0){
+                    for (int j = 0; j < losers.getTribePlayers().size(); j++) {
+                        if (i != j && !losers.getTribePlayers().get(j).isImmune()){
+                            s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum())));
+                        }
+                    }
+                }
                 vote = s.spin();
 //                for (int j = 0; j < losers.getTribePlayers().size(); j++) {
 //                    if (!losers.getTribePlayers().get(j).isImmune() && i != j) {
-//                        sectioned += (losers.getTribePlayers().get(j).getVotability() * alliance.getSpot(losers.getTribePlayers().get(j).getNum(),losers.getTribePlayers().get(i).getNum()));
+//                        sectioned += (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(),losers.getTribePlayers().get(i).getNum()));
 //                        //int vt = r.nextInt(total - split);
 //                        if (vt < sectioned) {
 //                            vote = losers.getTribePlayers().get(j);
@@ -3162,9 +3325,9 @@ public class Game  {
 //                vote = losers.getTribePlayers().get(r.nextInt(losers.getTribePlayers().size()));
 //            }*/
 //                }
-                if (!losesVote.contains(losers.getTribePlayers().get(i))) {
+                if (losers.getTribePlayers().get(i).CanVote()) {
                     voteCnt.add(vote);
-                    alliance.setSpot(losers.getTribePlayers().get(i).getNum(), vote.getNum(), alliance.getSpot(losers.getTribePlayers().get(i).getNum(), vote.getNum()) + 1);
+                    allianceboard.setSpot(losers.getTribePlayers().get(i).getNum(), vote.getNum(), allianceboard.getSpot(losers.getTribePlayers().get(i).getNum(), vote.getNum()) + 2);
                     tribalCouncilVotes.put(losers.getTribePlayers().get(i), vote);
                     voters.add(losers.getTribePlayers().get(i));
                     vote.setVotesAgainst();
@@ -3198,27 +3361,27 @@ public class Game  {
             if (idolPlayers.size() > 0) {
                 Player failed = new Player();
                 for (Player player : idolPlayers) {
-                    int risk = r.nextInt();
+                    double risk = r.nextDouble();
                     System.out.println(player + ": Jeff, I feel like there is a big target on my back and I am not safe tonight.");
-                    if(risk>=.05) {
+                    if(risk>=.025) {
                         System.out.println("Jeff Probst: This is an immunity idol, all votes for " + player + " will not count.");
-                        player.setScore(player.getScore() + 5);
+                        player.setScore(5);
                     }else{
                         System.out.println("Jeff Probst: This is " + ANSI_RED + "NOT" + ANSI_RESET + " an immunity idol, all votes for " + player + " will still count.");
                         failed = player;
                         Player tricker  = losers.getTribePlayers().get(r.nextInt(losers.getTribePlayers().size()));
-                        while(tricker!=player){
+                        while(tricker==player){
                             tricker  = losers.getTribePlayers().get(r.nextInt(losers.getTribePlayers().size()));
                         }
                         System.out.println(tricker + ": Gotcha!");
-                        tricker.setScore(tricker.getScore()+5);
-                        tricker.setVotability(tricker.getVotability()+3);
-                        player.setIdolCount(player.getIdolCount()-1);
+                        tricker.setScore(5);
+                        tricker.setVotability(10);
+                        player.setIdolCount(-1);
                         safe.remove(player);
-                        player.setScore(player.getScore() - 5);
+                        player.setScore(-5);
                     }
                 }
-                idolPlayers.remove(failed);
+                idolPlayers.removeIf(p -> !safe.contains(p));
             }
             if(voteSwapActive){
                 for(Player player:losers.getTribePlayers()) {
@@ -3259,7 +3422,7 @@ public class Game  {
                     championAdv = false;
                     if(ChampRight){
                         safe.add(losers.getTribePlayers().get(i));
-                        championUser.setScore(championUser.getScore()+3);
+                        championUser.setScore(3);
                         championUser = null;
                         break;
                     }else{
@@ -3269,12 +3432,13 @@ public class Game  {
             }
             Player voteName;
             System.out.println("Jeff Probst: I'll read the votes.");
+            System.out.println();
             for (int i = 0; i < idolPlayers.size(); i++) {
                 if (idolBlock && match!=null && match.equals(idolPlayers.get(i))) {
                     System.out.println("Jeff Probst: There is a idol block in here.");
                     System.out.println("Jeff Probst: It has been played on " + idolPlayers.get(i) + ".");
                     System.out.println("Jeff Probst: All votes for " + idolPlayers.get(i) + " will still count");
-                    blockUser.setScore(blockUser.getScore() + 5);
+                    blockUser.setScore(5);
                     safe.remove(idolPlayers.get(i));
                     idolPlayers.remove(idolPlayers.get(i));
                     i = i - 1;
@@ -3283,6 +3447,7 @@ public class Game  {
             HashMap<Integer, Player> second = new HashMap<>();
             ArrayList<Player> ordered = new ArrayList<>(dramatize(voteCnt));
             ArrayList<Player> previous = new ArrayList<>();
+            List<Player> countedVotes = new LinkedList<>();
             previous.add(null);
             int votesLeft = ordered.size() - 1;
             for (Player player : ordered) {
@@ -3299,14 +3464,15 @@ public class Game  {
                 }
                 if ((legacyUsable && voteName == legacy) || (idolPlayers.contains(player)) || safe.contains(player)) {
                     if (legacyUsable && voteName == legacy) {
-                        System.out.println("Jeff Probst: " + voteName + ", does not count.");
-                        legacy.setScore(legacy.getScore() + 1);
+                        System.out.println("Jeff Probst: " + ANSI_RED + voteName + ", does not count." + ANSI_RESET);
+                        System.out.println();
+                        legacy.setScore(3);
                     } else {
-                        System.out.println("Jeff Probst: " + voteName + ", does not count.");
-                        voteName.setScore(voteName.getScore() + 1);
+                        System.out.println("Jeff Probst: " + ANSI_RED + voteName + ", does not count." + ANSI_RESET);
+                        System.out.println();
+                        voteName.setScore(3);
                     }
                 } else {
-                    System.out.println("One vote: " + voteName);
                     votes.put(voteName, votes.getOrDefault(voteName, 0) + 1);
                     if (votes.get(voteName) > max) {
                         second.put(max, votedOut.get(max));
@@ -3332,10 +3498,37 @@ public class Game  {
                             break;
                         }
                     } else {
-                        System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                        System.out.println("One vote: " + voteName);
+                        StringBuilder voteList = new StringBuilder("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                        ArrayList<Player> used = new ArrayList<>();
+                        countedVotes = dramatize(countedVotes);
+                        for (Player p: countedVotes){
+                            if(p!=voteName && !used.contains(p)){
+                                voteList.append(", ").append(votes.get(p)).append(" votes for ").append(p);
+                                used.add(p);
+                            }
+                        }
+                        voteList.append(".");
+                        Scanner parse = new Scanner(String.valueOf(voteList));
+                        parse.useDelimiter("");
+                        String parsedD = "";
+                        int letters = 0;
+                        while (parse.hasNext()) {
+                            String nextLet = parse.next();
+                            parsedD = parsedD + nextLet;
+                            letters++;
+                            if (letters >= 140 && nextLet.equals(" ")) {
+                                parsedD = parsedD + System.lineSeparator();
+                                letters = 0;
+                            }
+                        }
+                        System.out.println(parsedD);
+                        System.out.println("Jeff Probst: " + votesLeft + " votes left.");
+                        System.out.println();
                     }
                 }
                 votesLeft--;
+                countedVotes.add(player);
                 previous.add(player);
             }
             List<Player> listOfKeys = new ArrayList<>();
@@ -3349,7 +3542,41 @@ public class Game  {
             }
             if (listOfKeys.size() == 0) {
                 System.out.println("Jeff Probst: There are no votes for anyone! We must revote.");
-                System.out.println("Jeff Probst: Here is who voted for who: ");
+                System.out.print("Vote Summary: ");
+                HashMap<Player, Integer> voteSum = new HashMap<>();
+                for(Player p: tribalCouncilVotes.values()){
+                    voteSum.put(p,voteSum.getOrDefault(p,0)+1);
+                }
+                ArrayList<Integer> numVotes = new ArrayList<Integer>(voteSum.values());
+                numVotes.sort(Comparator.reverseOrder());
+                System.out.print(numVotes.get(0));
+                numVotes.remove(0);
+                for(Integer v: numVotes){
+                    System.out.print("-"+v);
+                }
+                tied = " -> None";
+                System.out.println();
+                HashMap<Player, ArrayList<Player>> summary = new HashMap<>();
+                ArrayList<Player> votedpeeps = new ArrayList<>(tribalCouncilVotes.values());
+                for(Player votee: votedpeeps) {
+                    if (!summary.containsKey(votee)) {
+                        ArrayList<Player> play = new ArrayList<>();
+                        for (Player voter : tribalCouncilVotes.keySet()) {
+                            if (tribalCouncilVotes.get(voter).equals(votee)) {
+                                play.add(voter);
+                                summary.put(votee, play);
+                            }
+                        }
+                        System.out.print(votee + ": ");
+                        for (Player pl : summary.get(votee)) {
+                            System.out.print(pl + " | ");
+                        }
+                        System.out.println();
+                    }
+                }
+                System.out.println();
+                System.out.println("Voting Confessionals: ");
+                System.out.println();
                 for(Player voter: voters) {
                     if (!tribalCouncilVotes.get(voter).equals(null)) {
                         System.out.println(voter + ": " + tribalCouncilVotes.get(voter));
@@ -3363,6 +3590,7 @@ public class Game  {
                     }
                 }
                 tribalCouncilVotes.clear();
+                countedVotes.clear();
                 votes.clear();
                 voters.clear();
                 previous.clear();
@@ -3396,8 +3624,12 @@ public class Game  {
                         for (int i = 0; i < losers.getTribePlayers().size(); i++) {
                             WeightedSpinner<Player> s = new WeightedSpinner<>();
                             for (int j = 0; j < losers.getTribePlayers().size(); j++) {
-                                s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * alliance.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum())));
-                            }
+                                if(losers.getTribePlayers().get(i).getTargets().contains(losers.getTribePlayers().get(j))){
+                                    s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * 10 *allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum())));
+                                }else {
+                                    //         alvotes += (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum()));
+                                    s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum())));
+                                }                            }
                             vote = s.spin();
                             voteCnt.add(vote);
                             tribalCouncilVotes.put(losers.getTribePlayers().get(i), vote);
@@ -3409,8 +3641,12 @@ public class Game  {
                             WeightedSpinner<Player> s = new WeightedSpinner<>();
                             for (int j = 0; j < losers.getTribePlayers().size(); j++) {
                                 if (i != j && !safe.contains(losers.getTribePlayers().get(j))) {
-                                    s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * alliance.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum())));
-                                }
+                                    if(losers.getTribePlayers().get(i).getTargets().contains(losers.getTribePlayers().get(j))){
+                                        s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * 10 *allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum())));
+                                    }else {
+                                        //         alvotes += (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum()));
+                                        s.add(losers.getTribePlayers().get(j), (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum())));
+                                    }                                }
                             }
                             vote = s.spin();
                             voteCnt.add(vote);
@@ -3420,13 +3656,43 @@ public class Game  {
                         }
                     }
                     System.out.println("Jeff Probst: I'll read the votes");
+                    System.out.println();
                     ArrayList<Player> ordered2 = new ArrayList<>(dramatize(voteCnt));
+                    votesLeft = ordered2.size() -1;
                     for (Player player : ordered2) {
                         voteName = player;
                         voteName.setVotesAgainst();
                         System.out.println("One vote: " + voteName);
                         votes.put(voteName, votes.getOrDefault(voteName, 0) + 1);
-                        System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                        StringBuilder voteList = new StringBuilder("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                        ArrayList<Player> used = new ArrayList<>();
+                        countedVotes = dramatize(countedVotes);
+                        for (Player p: countedVotes){
+                            if(p!=voteName && !used.contains(p)){
+                                voteList.append(", ").append(votes.get(p)).append(" votes for ").append(p);
+                                used.add(p);
+                            }
+                        }
+                        voteList.append(".");
+                        Scanner parse = new Scanner(String.valueOf(voteList));
+                        parse.useDelimiter("");
+                        String parsedD = "";
+                        int letters = 0;
+                        while (parse.hasNext()) {
+                            String nextLet = parse.next();
+                            parsedD = parsedD + nextLet;
+                            letters++;
+                            if (letters >= 140 && nextLet.equals(" ")) {
+                                parsedD = parsedD + System.lineSeparator();
+                                letters = 0;
+                            }
+                        }
+                        System.out.println(parsedD);
+                        System.out.println("Jeff Probst: " + votesLeft + " votes left.");
+                        votesLeft--;
+                        System.out.println();
+                        countedVotes.add(player);
+                        //System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
                         if (votes.get(voteName) > max) {
                             second.put(max, votedOut.get(max));
                             max = votes.get(voteName);
@@ -3441,7 +3707,41 @@ public class Game  {
             } else if (listOfKeys.size() != 1) {
                 System.out.println("Jeff Probst: There is a tie, we must revote!");
                 System.out.println();
-                System.out.println("Jeff Probst: Here is who voted for who: ");
+                System.out.println("Vote Summary: ");
+                HashMap<Player, Integer> voteSum = new HashMap<>();
+                for(Player p: tribalCouncilVotes.values()){
+                    voteSum.put(p,voteSum.getOrDefault(p,0)+1);
+                }
+                ArrayList<Integer> numVotes = new ArrayList<Integer>(voteSum.values());
+                numVotes.sort(Comparator.reverseOrder());
+                System.out.print(numVotes.get(0));
+                tied = " -> " + numVotes.remove(0).toString();
+                for(Integer v: numVotes){
+                    System.out.print("-"+v);
+                    tied = tied + "-" +v;
+                }
+                System.out.println();
+                HashMap<Player, ArrayList<Player>> summary = new HashMap<>();
+                ArrayList<Player> votedpeeps = new ArrayList<>(tribalCouncilVotes.values());
+                for(Player votee: votedpeeps) {
+                    if (!summary.containsKey(votee)) {
+                        ArrayList<Player> play = new ArrayList<>();
+                        for (Player voter : tribalCouncilVotes.keySet()) {
+                            if (tribalCouncilVotes.get(voter).equals(votee)) {
+                                play.add(voter);
+                                summary.put(votee, play);
+                            }
+                        }
+                        System.out.print(votee + ": ");
+                        for (Player pl : summary.get(votee)) {
+                            System.out.print(pl + " | ");
+                        }
+                        System.out.println();
+                    }
+                }
+                System.out.println();
+                System.out.println("Voting Confessionals: ");
+                System.out.println();
                 for(Player voter: voters){
                     if (!tribalCouncilVotes.get(voter).equals(null)) {
                         System.out.println(voter + ": " + tribalCouncilVotes.get(voter));
@@ -3455,6 +3755,7 @@ public class Game  {
                     }
                 }
                 tribalCouncilVotes.clear();
+                countedVotes.clear();
                 votes.clear();
                 second.clear();
                 votedOut.clear();
@@ -3474,7 +3775,9 @@ public class Game  {
                     voted.setVotesAgainst();
                 }
                 System.out.println("Jeff Probst: I'll read the votes");
+                System.out.println();
                 ArrayList<Player> ordered2 = new ArrayList<>(dramatize(voteCnt));
+                int votesLeft2 = ordered2.size() - 1;
                 for (Player player : ordered2) {
                     for (int i = 0; i < previous.size(); i++) {
                         if (previous.get(previous.size() - 1) != null && previous.get(previous.size() - 1).equals(player)) {
@@ -3482,7 +3785,6 @@ public class Game  {
                         }
                     }
                     voteName = player;
-                    System.out.println("One vote: " + voteName);
                     votes.put(voteName, votes.getOrDefault(voteName, 0) + 1);
                     if (votes.get(voteName) > max) {
                         second.put(max, votedOut.get(max));
@@ -3491,23 +3793,53 @@ public class Game  {
                     if (votes.get(voteName) == max) {
                         votedOut.put(max, voteName);
                     }
-                    votesLeft = ordered2.size();
                     boolean sparkle = !Objects.equals(votes.get(previous.get(previous.size() - 1)), votes.get(voteName));
-                    if ((votesLeft == 0 && sparkle) || votes.get(voteName) > losers.getTribePlayers().size() / 2 || (previous.get(previous.size() - 1) != null && votes.get(previous.get(previous.size() - 1)) != null && votes.get(previous.get(previous.size() - 1)) + votesLeft < votes.get(voteName))) {
+                    if ((votesLeft2 == 0 && sparkle) || votes.get(voteName) > losers.getTribePlayers().size() / 2 || (previous.get(previous.size() - 1) != null && votes.get(previous.get(previous.size() - 1)) != null && votes.get(previous.get(previous.size() - 1)) + votesLeft2 < votes.get(voteName))) {
                         int placement = numPlayers - players.size() + 1;
                         if (placement == 1) {
                             System.out.println("Jeff Probst: The " + placement + "st player voted out of the game: " + voteName);
+                            break;
                         } else if (placement == 2) {
                             System.out.println("Jeff Probst: The " + placement + "nd player voted out of the game: " + voteName);
+                            break;
                         } else if (placement == 3) {
                             System.out.println("Jeff Probst: The " + placement + "rd player voted out of the game: " + voteName);
+                            break;
                         } else {
                             System.out.println("Jeff Probst: The " + placement + "th player voted out of the game: " + voteName);
+                            break;
                         }
                     } else {
-                        System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                        System.out.println("One vote: " + voteName);
+                        StringBuilder voteList = new StringBuilder("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                        ArrayList<Player> used = new ArrayList<>();
+                        countedVotes = dramatize(countedVotes);
+                        for (Player p: countedVotes){
+                            if(p!=voteName && !used.contains(p)){
+                                voteList.append(", ").append(votes.get(p)).append(" votes for ").append(p);
+                                used.add(p);
+                            }
+                        }
+                        voteList.append(".");
+                        Scanner parse = new Scanner(String.valueOf(voteList));
+                        parse.useDelimiter("");
+                        String parsedD = "";
+                        int letters = 0;
+                        while (parse.hasNext()) {
+                            String nextLet = parse.next();
+                            parsedD = parsedD + nextLet;
+                            letters++;
+                            if (letters >= 140 && nextLet.equals(" ")) {
+                                parsedD = parsedD + System.lineSeparator();
+                                letters = 0;
+                            }
+                        }
+                        System.out.println(parsedD);
+                        System.out.println("Jeff Probst: " + votesLeft2 + " votes left.");
+                        System.out.println();
                     }
-                    votesLeft--;
+                    countedVotes.add(player);
+                    votesLeft2--;
                     previous.add(player);
                 }
             }
@@ -3555,6 +3887,9 @@ public class Game  {
                 exit(gone);
                 votedOutLast=gone;
                 eliminated.add(gone);
+                for(Alliance a: alliances){
+                    a.removeMember(gone);
+                }
                 if (players.size() == 3) {
                     thirdPlace = gone;
                 }
@@ -3598,8 +3933,42 @@ public class Game  {
                     legacyIdol = 0;
                 }
                 System.out.println();
-                System.out.println("Jeff Probst: Here is who voted for who: ");
-                System.out.println(tribalCouncilVotes);
+                System.out.println("Vote Summary: ");
+                HashMap<Player, Integer> voteSum = new HashMap<>();
+                for(Player p: tribalCouncilVotes.values()) {
+                    voteSum.put(p, voteSum.getOrDefault(p, 0) + 1);
+                }
+                ArrayList<Integer> numVotes = new ArrayList<Integer>(voteSum.values());
+                numVotes.sort(Comparator.reverseOrder());
+                System.out.print(numVotes.get(0));
+                String vct = " -> " + numVotes.remove(0).toString();
+                for(Integer v: numVotes){
+                    vct = vct+"-"+v.toString();
+                    System.out.print("-" + v);
+                }
+                elimvotes.put(gone,tied + vct);
+                System.out.println();
+                HashMap<Player, ArrayList<Player>> summary = new HashMap<>();
+                ArrayList<Player> votedpeeps = new ArrayList<>(tribalCouncilVotes.values());
+                for(Player votee: votedpeeps) {
+                    if (!summary.containsKey(votee)) {
+                        ArrayList<Player> play = new ArrayList<>();
+                        for (Player voter : tribalCouncilVotes.keySet()) {
+                            if (tribalCouncilVotes.get(voter).equals(votee)) {
+                                play.add(voter);
+                                summary.put(votee, play);
+                            }
+                        }
+                        System.out.print(votee + ": ");
+                        for (Player pl : summary.get(votee)) {
+                            System.out.print(pl + " | ");
+                        }
+                        System.out.println();
+                    }
+                }
+                System.out.println();
+                System.out.println("Voting Confessionals: ");
+                System.out.println();
                 for(Player voter: tribalCouncilVotes.keySet()) {
                     if (!tribalCouncilVotes.get(voter).equals(null)) {
                         System.out.println(voter + ": " + tribalCouncilVotes.get(voter));
@@ -3626,6 +3995,9 @@ public class Game  {
         Tribe b = new Tribe();
         b.setColor(tribes.get(lostTribe).getColor());
         b.setTribePlayers(tribes.get(lostTribe).getTribePlayers());
+        for(Player p: b.getTribePlayers()){
+            p.setCanVote(true);
+        }
         b.setTribeName(tribes.get(lostTribe).tribeName());
         tribes.set(lostTribe, b);
         losingTribe = b;
@@ -3641,6 +4013,7 @@ public class Game  {
 
     public void splitTribalCouncil(ArrayList<Player> groupA, ArrayList<Player> groupB) throws FileNotFoundException {
         ArrayList<Player> safe = new ArrayList<>();
+        String tied = "";
         HashMap<Player, Integer> votes = new HashMap<>();
         ArrayList<Player> voteCnt = new ArrayList<>();
         Player match = new Player();
@@ -3676,7 +4049,7 @@ public class Game  {
                         ev = true;
                         advName.put(player, "Extra");
                         player.setAdvantages(1, player.getAdvantages(1) - 1);
-                        player.setScore(player.getScore() + 3);
+                        player.setScore(3);
                         played=true;
                     }else{
                         asel--;
@@ -3689,8 +4062,9 @@ public class Game  {
                         }
                         System.out.println(player + ": I'd like to play my Vote Blocker on " + lostVote);
                         losesVote.add(lostVote);
+                        lostVote.setCanVote(false);
                         player.setAdvantages(2, player.getAdvantages(2) - 1);
-                        player.setScore(player.getScore() + 3);
+                        player.setScore(3);
                         played = true;
                     }else{
                         asel--;
@@ -3702,11 +4076,12 @@ public class Game  {
                             lostVote = groupA.get(r.nextInt(groupA.size()));
                         }
                         System.out.println(player + ": I'd like to play my Steal A Vote on " + lostVote);
+                        lostVote.setCanVote(false);
                         losesVote.add(lostVote);
                         ev = true;
                         advName.put(player, "Steal");
                         player.setAdvantages(3, player.getAdvantages(3) - 1);
-                        player.setScore(player.getScore() + 4);
+                        player.setScore(4);
                         played = true;
                     }else{
                         asel--;
@@ -3732,7 +4107,7 @@ public class Game  {
                         legacy = player;
                         safe.add(legacy);
                         legacyUsable = true;
-                        player.setScore(player.getScore() + 4);
+                        player.setScore(4);
                         played = true;
                     }else{
                         asel--;
@@ -3744,7 +4119,7 @@ public class Game  {
                         System.out.println("Jeff Probst: This is the Force Rocks Advantage, " + player + " will now be safe, and the rest of you will draw rocks.");
                         safe.add(player);
                         rocks(safe, losingTribe.getTribePlayers());
-                        player.setScore(player.getScore() + 3);
+                        player.setScore(3);
                         FRUsable = false;
                         round++;
                         player.setAdvantages(7, player.getAdvantages(7) - 1);
@@ -3763,9 +4138,10 @@ public class Game  {
                 } else if (player.getAdvantages(9) > 0 && !played) {
                     if(asel == 0) {
                         System.out.println(player + ": I would like to play my Safety without Power Advantage!");
+                        player.setCanVote(false);
                         losesVote.add(player);
                         player.setImmune(true);
-                        player.setScore(player.getScore() + 1);
+                        player.setScore(3);
                         player.setAdvantages(9, player.getAdvantages(9) - 1);
                         System.out.println("Jeff Probst: " + player + " will now leave Tribal Council and not vote.");
                         played = true;
@@ -3783,13 +4159,13 @@ public class Game  {
             if ((player.getVotability() > avgVotability(groupA) + 2.15 || players.size() == player.getIdolCount() + 4) && player.getIdolCount() > 0 && !player.isImmune() && numPlayers - eliminated.size() > 4) {
                 idolPlayers.add(player);
                 safe.add(player);
-                player.setIdolCount(player.getIdolCount() - 1);
+                player.setIdolCount(-1);
             }
         }
         int total = 0;
         for (int i = 0; i < groupA.size(); i++) {
             if (!groupA.get(i).isImmune()) {
-                total = total + groupA.get(i).getVotability();//* alliance.getSpot(0,losers.getTribePlayers().get(i).getNum());
+                total = total + groupA.get(i).getVotability();//* allianceboard.getSpot(0,losers.getTribePlayers().get(i).getNum());
             }
         }
         Player vote = new Player();
@@ -3798,18 +4174,30 @@ public class Game  {
 
             WeightedSpinner<Player> s = new WeightedSpinner<>();
             for (int j = 0; j < groupA.size(); j++) {
-                if (i != j && !groupA.get(j).isImmune()) {
-                    s.add(groupA.get(j), (groupA.get(j).getVotability() * alliance.getSpot(groupA.get(j).getNum(), groupA.get(i).getNum())));
+                if (i != j && !groupA.get(j).isImmune() && (!groupA.get(j).isInAllianceWith(groupA.get(i))||groupA.get(i).getTargets().contains(groupA.get(j)))) {
+                    if(groupA.get(i).getTargets().contains(groupA.get(j))){
+                        s.add(groupA.get(j), (groupA.get(j).getVotability() * 10 *allianceboard.getSpot(groupA.get(j).getNum(), groupA.get(i).getNum())));
+                    }else {
+                        //         alvotes += (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum()));
+                        s.add(groupA.get(j), (groupA.get(j).getVotability() * allianceboard.getSpot(groupA.get(j).getNum(), groupA.get(i).getNum())));
+                    }
                 }
 //
             }
             if (groupA.get(i).isImmune()) {
                 safe.add(groupA.get(i));
             }
+            if(s.size() == 0){
+                for (int j = 0; j < groupA.size(); j++) {
+                    if (i != j && !groupA.get(j).isImmune()){
+                        s.add(groupA.get(j), (groupA.get(j).getVotability() * allianceboard.getSpot(groupA.get(j).getNum(), groupA.get(i).getNum())));
+                    }
+                }
+            }
             vote = s.spin();
-            if (!losesVote.contains(groupA.get(i))) {
+            if (groupA.get(i).CanVote()) {
                 voteCnt.add(vote);
-                alliance.setSpot(groupA.get(i).getNum(), vote.getNum(), alliance.getSpot(groupA.get(i).getNum(), vote.getNum()) + 1);
+                allianceboard.setSpot(groupA.get(i).getNum(), vote.getNum(), allianceboard.getSpot(groupA.get(i).getNum(), vote.getNum()) + 2);
                 tribalCouncilVotes.put(groupA.get(i), vote);
                 voters.add(groupA.get(i));
                 vote.setVotesAgainst();
@@ -3839,27 +4227,31 @@ public class Game  {
         if (players.size() > 4) {
             System.out.println("Jeff Probst: If anybody has an idol or an advantage and would like to play it, now would be the time to do so.");
         }
+        ArrayList<Player> nocount = new ArrayList<>();
         if (idolPlayers.size() > 0) {
             for (Player player : idolPlayers) {
-                int risk = r.nextInt();
+                double risk = r.nextDouble();
                 System.out.println(player + ": Jeff, I feel like there is a big target on my back and I am not safe tonight.");
-                if(risk>=.05) {
+                if(risk>=.025) {
                     System.out.println("Jeff Probst: This is an immunity idol, all votes for " + player + " will not count.");
-                    player.setScore(player.getScore() + 5);
+                    player.setScore(5);
                 }else{
                     System.out.println("Jeff Probst: This is " + ANSI_RED + "NOT" + ANSI_RESET + " an immunity idol, all votes for " + player + " will still count.");
-                    idolPlayers.remove(player);
+                    nocount.add(player);
                     Player tricker  = groupA.get(r.nextInt(groupA.size()));
-                    while(tricker!=player){
+                    while(tricker==player){
                         tricker  = groupA.get(r.nextInt(groupA.size()));
                     }
                     System.out.println(tricker + ": Gotcha!");
-                    tricker.setScore(tricker.getScore()+5);
-                    tricker.setVotability(tricker.getVotability()+3);
-                    player.setIdolCount(player.getIdolCount()-1);
+                    tricker.setScore(5);
+                    tricker.setVotability(10);
+                    player.setIdolCount(-1);
                     safe.remove(player);
-                    player.setScore(player.getScore() - 5);
+                    player.setScore(-5);
                 }
+            }
+            for(Player p: nocount){
+                idolPlayers.remove(p);
             }
         }
         if(voteSwapActive){
@@ -3896,12 +4288,13 @@ public class Game  {
         }
         Player voteName;
         System.out.println("Jeff Probst: I'll read the votes.");
+        System.out.println();
         for (int i = 0; i < idolPlayers.size(); i++) {
             if (idolBlock && match.equals(idolPlayers.get(i))) {
                 System.out.println("Jeff Probst: There is a idol block in here.");
                 System.out.println("Jeff Probst: It has been played on " + idolPlayers.get(i) + ".");
                 System.out.println("Jeff Probst: All votes for " + idolPlayers.get(i) + " will still count");
-                blockUser.setScore(blockUser.getScore() + 5);
+                blockUser.setScore(5);
                 safe.remove(idolPlayers.get(i));
                 idolPlayers.remove(idolPlayers.get(i));
                 i = i - 1;
@@ -3910,6 +4303,7 @@ public class Game  {
         HashMap<Integer, Player> second = new HashMap<>();
         ArrayList<Player> ordered = new ArrayList<>(dramatize(voteCnt));
         ArrayList<Player> previous = new ArrayList<>();
+        List<Player> countedVotes = new LinkedList<>();
         previous.add(null);
         int votesLeft = ordered.size() - 1;
         for (Player player : ordered) {
@@ -3926,14 +4320,15 @@ public class Game  {
             }
             if ((legacyUsable && voteName == legacy) || (idolPlayers.contains(player))) {
                 if (legacyUsable && voteName == legacy) {
-                    System.out.println("Jeff Probst: " + voteName + ", does not count.");
-                    legacy.setScore(legacy.getScore() + 1);
+                    System.out.println("Jeff Probst: " + ANSI_RED + voteName + ", does not count." + ANSI_RESET);
+                    legacy.setScore(3);
+                    System.out.println();
                 } else {
-                    System.out.println("Jeff Probst: " + voteName + ", does not count.");
-                    voteName.setScore(voteName.getScore() + 1);
+                    System.out.println("Jeff Probst: " + ANSI_RED + voteName + ", does not count." + ANSI_RESET);
+                    voteName.setScore(3);
+                    System.out.println();
                 }
             } else {
-                System.out.println("One vote: " + voteName);
                 votes.put(voteName, votes.getOrDefault(voteName, 0) + 1);
                 if (votes.get(voteName) > max) {
                     second.put(max, votedOut.get(max));
@@ -3959,10 +4354,37 @@ public class Game  {
                         break;
                     }
                 } else {
-                    System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    System.out.println("One vote: " + voteName);
+                    StringBuilder voteList = new StringBuilder("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    ArrayList<Player> used = new ArrayList<>();
+                    countedVotes = dramatize(countedVotes);
+                    for (Player p: countedVotes){
+                        if(p!=voteName && !used.contains(p)){
+                            voteList.append(", ").append(votes.get(p)).append(" votes for ").append(p);
+                            used.add(p);
+                        }
+                    }
+                    voteList.append(".");
+                    Scanner parse = new Scanner(String.valueOf(voteList));
+                    parse.useDelimiter("");
+                    String parsedD = "";
+                    int letters = 0;
+                    while (parse.hasNext()) {
+                        String nextLet = parse.next();
+                        parsedD = parsedD + nextLet;
+                        letters++;
+                        if (letters >= 140 && nextLet.equals(" ")) {
+                            parsedD = parsedD + System.lineSeparator();
+                            letters = 0;
+                        }
+                    }
+                    System.out.println(parsedD);
+                    System.out.println("Jeff Probst: " + votesLeft + " votes left.");
+                    System.out.println();
                 }
             }
             votesLeft--;
+            countedVotes.add(player);
             previous.add(player);
         }
         List<Player> listOfKeys = new ArrayList<>();
@@ -3976,7 +4398,42 @@ public class Game  {
         }
         if (listOfKeys.size() == 0) {
             System.out.println("Jeff Probst: There are no votes for anyone! We must revote.");
-            System.out.println("Jeff Probst: Here is who voted for who: ");
+            System.out.println();
+            System.out.println("Vote Summary: ");
+            HashMap<Player, Integer> voteSum = new HashMap<>();
+            for(Player p: tribalCouncilVotes.values()){
+                voteSum.put(p,voteSum.getOrDefault(p,0)+1);
+            }
+            ArrayList<Integer> numVotes = new ArrayList<Integer>(voteSum.values());
+            numVotes.sort(Comparator.reverseOrder());
+            System.out.print(numVotes.get(0));
+            numVotes.remove(0);
+            for(Integer v: numVotes){
+                System.out.print("-"+v);
+            }
+            tied = " -> None ";
+            System.out.println();
+            HashMap<Player, ArrayList<Player>> summary = new HashMap<>();
+            ArrayList<Player> votedpeeps = new ArrayList<>(tribalCouncilVotes.values());
+            for(Player votee: votedpeeps) {
+                if (!summary.containsKey(votee)) {
+                    ArrayList<Player> play = new ArrayList<>();
+                    for (Player voter : tribalCouncilVotes.keySet()) {
+                        if (tribalCouncilVotes.get(voter).equals(votee)) {
+                            play.add(voter);
+                            summary.put(votee, play);
+                        }
+                    }
+                    System.out.print(votee + ": ");
+                    for (Player pl : summary.get(votee)) {
+                        System.out.print(pl + " | ");
+                    }
+                    System.out.println();
+                }
+            }
+            System.out.println();
+            System.out.println("Voting Confessionals: ");
+            System.out.println();
             for(Player voter: voters) {
                 if (!tribalCouncilVotes.get(voter).equals(null)) {
                     System.out.println(voter + ": " + tribalCouncilVotes.get(voter));
@@ -3990,6 +4447,7 @@ public class Game  {
                 }
             }
             tribalCouncilVotes.clear();
+            countedVotes.clear();
             votes.clear();
             voters.clear();
             previous.clear();
@@ -4023,7 +4481,12 @@ public class Game  {
                     for (int i = 0; i < groupA.size(); i++) {
                         WeightedSpinner<Player> s = new WeightedSpinner<>();
                         for (int j = 0; j < groupA.size(); j++) {
-                            s.add(groupA.get(j), (groupA.get(j).getVotability() * alliance.getSpot(groupA.get(j).getNum(), groupA.get(i).getNum())));
+                            if(groupA.get(i).getTargets().contains(groupA.get(j))){
+                                s.add(groupA.get(j), (groupA.get(j).getVotability() * 10 *allianceboard.getSpot(groupA.get(j).getNum(), groupA.get(i).getNum())));
+                            }else {
+                                //         alvotes += (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum()));
+                                s.add(groupA.get(j), (groupA.get(j).getVotability() * allianceboard.getSpot(groupA.get(j).getNum(), groupA.get(i).getNum())));
+                            }
                         }
                         vote = s.spin();
                         voteCnt.add(vote);
@@ -4036,7 +4499,12 @@ public class Game  {
                         WeightedSpinner<Player> s = new WeightedSpinner<>();
                         for (int j = 0; j < groupA.size(); j++) {
                             if (i != j && !safe.contains(groupA.get(j))) {
-                                s.add(groupA.get(j), (groupA.get(j).getVotability() * alliance.getSpot(groupA.get(j).getNum(), groupA.get(i).getNum())));
+                                if(groupA.get(i).getTargets().contains(groupA.get(j))){
+                                    s.add(groupA.get(j), (groupA.get(j).getVotability() * 10 *allianceboard.getSpot(groupA.get(j).getNum(), groupA.get(i).getNum())));
+                                }else {
+                                    //         alvotes += (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum()));
+                                    s.add(groupA.get(j), (groupA.get(j).getVotability() * allianceboard.getSpot(groupA.get(j).getNum(), groupA.get(i).getNum())));
+                                }
                             }
                         }
                         vote = s.spin();
@@ -4047,13 +4515,43 @@ public class Game  {
                     }
                 }
                 System.out.println("Jeff Probst: I'll read the votes");
+                System.out.println();
                 ArrayList<Player> ordered2 = new ArrayList<>(dramatize(voteCnt));
+                votesLeft = ordered2.size() - 1;
                 for (Player player : ordered2) {
                     voteName = player;
                     voteName.setVotesAgainst();
                     System.out.println("One vote: " + voteName);
                     votes.put(voteName, votes.getOrDefault(voteName, 0) + 1);
-                    System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    StringBuilder voteList = new StringBuilder("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    ArrayList<Player> used = new ArrayList<>();
+                    countedVotes = dramatize(countedVotes);
+                    for (Player p: countedVotes){
+                        if(p!=voteName && !used.contains(p)){
+                            voteList.append(", ").append(votes.get(p)).append(" votes for ").append(p);
+                            used.add(p);
+                        }
+                    }
+                    voteList.append(".");
+                    Scanner parse = new Scanner(String.valueOf(voteList));
+                    parse.useDelimiter("");
+                    String parsedD = "";
+                    int letters = 0;
+                    while (parse.hasNext()) {
+                        String nextLet = parse.next();
+                        parsedD = parsedD + nextLet;
+                        letters++;
+                        if (letters >= 140 && nextLet.equals(" ")) {
+                            parsedD = parsedD + System.lineSeparator();
+                            letters = 0;
+                        }
+                    }
+                    System.out.println(parsedD);
+                    System.out.println("Jeff Probst: " + votesLeft + " votes left.");
+                    System.out.println();
+                    countedVotes.add(player);
+                    votesLeft--;
+                    //System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
                     if (votes.get(voteName) > max) {
                         second.put(max, votedOut.get(max));
                         max = votes.get(voteName);
@@ -4068,7 +4566,41 @@ public class Game  {
         } else if (listOfKeys.size() != 1) {
             System.out.println("Jeff Probst: There is a tie, we must revote!");
             System.out.println();
-            System.out.println("Jeff Probst: Here is who voted for who: ");
+            System.out.println("Vote Summary: ");
+            HashMap<Player, Integer> voteSum = new HashMap<>();
+            for(Player p: tribalCouncilVotes.values()){
+                voteSum.put(p,voteSum.getOrDefault(p,0)+1);
+            }
+            ArrayList<Integer> numVotes = new ArrayList<Integer>(voteSum.values());
+            numVotes.sort(Comparator.reverseOrder());
+            System.out.print(numVotes.get(0));
+            tied = " -> " + numVotes.remove(0).toString();
+            for(Integer v: numVotes){
+                tied = tied + "-" + v.toString();
+                System.out.print("-"+v);
+            }
+            System.out.println();
+            HashMap<Player, ArrayList<Player>> summary = new HashMap<>();
+            ArrayList<Player> votedpeeps = new ArrayList<>(tribalCouncilVotes.values());
+            for(Player votee: votedpeeps) {
+                if (!summary.containsKey(votee)) {
+                    ArrayList<Player> play = new ArrayList<>();
+                    for (Player voter : tribalCouncilVotes.keySet()) {
+                        if (tribalCouncilVotes.get(voter).equals(votee)) {
+                            play.add(voter);
+                            summary.put(votee, play);
+                        }
+                    }
+                    System.out.print(votee + ": ");
+                    for (Player pl : summary.get(votee)) {
+                        System.out.print(pl + " | ");
+                    }
+                    System.out.println();
+                }
+            }
+            System.out.println();
+            System.out.println("Voting Confessionals: ");
+            System.out.println();
             for(Player voter: voters) {
                 if (!tribalCouncilVotes.get(voter).equals(null)) {
                     System.out.println(voter + ": " + tribalCouncilVotes.get(voter));
@@ -4082,6 +4614,7 @@ public class Game  {
                 }
             }
             tribalCouncilVotes.clear();
+            countedVotes.clear();
             votes.clear();
             second.clear();
             votedOut.clear();
@@ -4100,7 +4633,9 @@ public class Game  {
                 }
             }
             System.out.println("Jeff Probst: I'll read the votes");
+            System.out.println();
             ArrayList<Player> ordered2 = new ArrayList<>(dramatize(voteCnt));
+            votesLeft = ordered2.size() - 1;
             for (Player player : ordered2) {
                 for (int i = 0; i < previous.size(); i++) {
                     if (previous.get(previous.size() - 1) != null && previous.get(previous.size() - 1).equals(player)) {
@@ -4108,7 +4643,6 @@ public class Game  {
                     }
                 }
                 voteName = player;
-                System.out.println("One vote: " + voteName);
                 votes.put(voteName, votes.getOrDefault(voteName, 0) + 1);
                 if (votes.get(voteName) > max) {
                     second.put(max, votedOut.get(max));
@@ -4117,7 +4651,6 @@ public class Game  {
                 if (votes.get(voteName) == max) {
                     votedOut.put(max, voteName);
                 }
-                votesLeft = ordered2.size();
                 boolean sparkle = !Objects.equals(votes.get(previous.get(previous.size() - 1)), votes.get(voteName));
                 if ((votesLeft == 0 && sparkle) || votes.get(voteName) > groupA.size() / 2 || (previous.get(previous.size() - 1) != null && votes.get(previous.get(previous.size() - 1)) != null && votes.get(previous.get(previous.size() - 1)) + votesLeft < votes.get(voteName))) {
                     int placement = numPlayers - players.size() + 1;
@@ -4135,8 +4668,37 @@ public class Game  {
                         break;
                     }
                 } else {
-                    System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    System.out.println("One vote: " + voteName);
+                    StringBuilder voteList = new StringBuilder("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    ArrayList<Player> used = new ArrayList<>();
+                    countedVotes = dramatize(countedVotes);
+                    for (Player p: countedVotes){
+                        if(p!=voteName && !used.contains(p)){
+                            voteList.append(", ").append(votes.get(p)).append(" votes for ").append(p);
+                            used.add(p);
+                        }
+                    }
+                    voteList.append(".");
+                    Scanner parse = new Scanner(String.valueOf(voteList));
+                    parse.useDelimiter("");
+                    String parsedD = "";
+                    int letters = 0;
+                    while (parse.hasNext()) {
+                        String nextLet = parse.next();
+                        parsedD = parsedD + nextLet;
+                        letters++;
+                        if (letters >= 140 && nextLet.equals(" ")) {
+                            parsedD = parsedD + System.lineSeparator();
+                            letters = 0;
+                        }
+                    }
+                    System.out.println(parsedD);
+                    System.out.println("Jeff Probst: " + votesLeft + " votes left.");
+                    System.out.println();
+                    //System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
                 }
+                countedVotes.add(player);
+                votesLeft--;
                 previous.add(player);
             }
         }
@@ -4158,6 +4720,9 @@ public class Game  {
             System.out.println("Jeff Probst: " + ANSI_RED + gone + ANSI_RESET + " the tribe has spoken");
             exit(gone);
             eliminated.add(gone);
+            for(Alliance a: alliances){
+                a.removeMember(gone);
+            }
             if (players.size() == 3) {
                 thirdPlace = gone;
             }
@@ -4195,7 +4760,42 @@ public class Game  {
                 legacyIdol = 0;
             }
             System.out.println();
-            System.out.println("Jeff Probst: Here is who voted for who: ");
+            System.out.println("Vote Summary: ");
+            HashMap<Player, Integer> voteSum = new HashMap<>();
+            for(Player p: tribalCouncilVotes.values()){
+                voteSum.put(p,voteSum.getOrDefault(p,0)+1);
+            }
+            ArrayList<Integer> numVotes = new ArrayList<Integer>(voteSum.values());
+            numVotes.sort(Comparator.reverseOrder());
+            System.out.print(numVotes.get(0));
+            String vct = " -> " + numVotes.remove(0).toString();
+            for(Integer v: numVotes){
+                System.out.print("-"+v);
+                vct = vct + "-" + v.toString();
+            }
+            elimvotes.put(gone, tied + vct);
+            System.out.println();
+            HashMap<Player, ArrayList<Player>> summary = new HashMap<>();
+            ArrayList<Player> votedpeeps = new ArrayList<>(tribalCouncilVotes.values());
+            for(Player votee: votedpeeps) {
+                if (!summary.containsKey(votee)) {
+                    ArrayList<Player> play = new ArrayList<>();
+                    for (Player voter : tribalCouncilVotes.keySet()) {
+                        if (tribalCouncilVotes.get(voter).equals(votee)) {
+                            play.add(voter);
+                            summary.put(votee, play);
+                        }
+                    }
+                    System.out.print(votee + ": ");
+                    for (Player pl : summary.get(votee)) {
+                        System.out.print(pl + " | ");
+                    }
+                    System.out.println();
+                }
+            }
+            System.out.println();
+            System.out.println("Voting Confessionals: ");
+            System.out.println();
             for(Player voter: voters) {
                 if (tribalCouncilVotes.get(voter)!=null) {
                     System.out.println(voter + ": " + tribalCouncilVotes.get(voter));
@@ -4213,6 +4813,7 @@ public class Game  {
         ArrayList<Player> remain = new ArrayList<>(groupA);
         idolPlayers.clear();
         tribalCouncilVotes.clear();
+        countedVotes.clear();
         votedOut.clear();
         idolBlock =false;
         legacyUsable =false;
@@ -4254,7 +4855,7 @@ public class Game  {
                         ev = true;
                         advName.put(player, "Extra");
                         player.setAdvantages(1, player.getAdvantages(1) - 1);
-                        player.setScore(player.getScore() + 3);
+                        player.setScore(3);
                         played = true;
                     }else{
                         asel--;
@@ -4267,8 +4868,9 @@ public class Game  {
                         }
                         losesVote.add(lostVote);
                         System.out.println(player + ": I'd like to play my Vote Blocker on " + lostVote);
+                        lostVote.setCanVote(false);
                         player.setAdvantages(2, player.getAdvantages(2) - 1);
-                        player.setScore(player.getScore() + 3);
+                        player.setScore(3);
                         played = true;
                     }else{
                         asel--;
@@ -4281,10 +4883,11 @@ public class Game  {
                         }
                         losesVote.add(lostVote);
                         System.out.println(player + ": I'd like to play my Steal A Vote on " + lostVote);
+                        lostVote.setCanVote(false);
                         ev = true;
                         advName.put(player, "Steal");
                         player.setAdvantages(3, player.getAdvantages(3) - 1);
-                        player.setScore(player.getScore() + 4);
+                        player.setScore(4);
                         played=true;
                     }else{
                         asel--;
@@ -4310,7 +4913,7 @@ public class Game  {
                         legacy = player;
                         safe.add(legacy);
                         legacyUsable = true;
-                        player.setScore(player.getScore() + 4);
+                        player.setScore(4);
                         played = true;
                     }else{
                         asel--;
@@ -4322,7 +4925,7 @@ public class Game  {
                         System.out.println("Jeff Probst: This is the Force Rocks Advantage, " + player + " will now be safe, and the rest of you will draw rocks.");
                         safe.add(player);
                         rocks(safe, losingTribe.getTribePlayers());
-                        player.setScore(player.getScore() + 3);
+                        player.setScore(3);
                         FRUsable = false;
                         round++;
                         player.setAdvantages(7, player.getAdvantages(7) - 1);
@@ -4341,9 +4944,10 @@ public class Game  {
                 } else if (player.getAdvantages(9) > 0 && !played) {
                     if(asel==0) {
                         System.out.println(player + ": I would like to play my Safety without Power Advantage!");
+                        player.setCanVote(false);
                         losesVote.add(player);
                         player.setImmune(true);
-                        player.setScore(player.getScore() + 1);
+                        player.setScore(3);
                         player.setAdvantages(9, player.getAdvantages(9) - 1);
                         System.out.println("Jeff Probst: " + player + " will now leave Tribal Council and not vote.");
                         played=true;
@@ -4361,13 +4965,13 @@ public class Game  {
             if ((player.getVotability() > avgVotability(groupB) + 2.15 || players.size() == player.getIdolCount() + 4) && player.getIdolCount() > 0 && !player.isImmune() && numPlayers - eliminated.size() > 4) {
                 idolPlayers.add(player);
                 safe.add(player);
-                player.setIdolCount(player.getIdolCount() - 1);
+                player.setIdolCount(-1);
             }
         }
         total = 0;
         for (int i = 0; i < groupA.size(); i++) {
             if (!groupA.get(i).isImmune()) {
-                total = total + groupB.get(i).getVotability();//* alliance.getSpot(0,losers.getTribePlayers().get(i).getNum());
+                total = total + groupB.get(i).getVotability();//* allianceboard.getSpot(0,losers.getTribePlayers().get(i).getNum());
             }
         }
         voters = new ArrayList<>();
@@ -4375,17 +4979,29 @@ public class Game  {
 
             WeightedSpinner<Player> s = new WeightedSpinner<>();
             for (int j = 0; j < groupB.size(); j++) {
-                if (i != j && !groupB.get(j).isImmune()) {
-                    s.add(groupB.get(j), (groupB.get(j).getVotability() * alliance.getSpot(groupB.get(j).getNum(), groupB.get(i).getNum())));
+                if (i != j && !groupB.get(j).isImmune() && (!groupB.get(j).isInAllianceWith(groupB.get(i))||groupB.get(i).getTargets().contains(groupB.get(j)))) {
+                    if(groupB.get(i).getTargets().contains(groupB.get(j))){
+                        s.add(groupB.get(j), (groupB.get(j).getVotability() * 10 *allianceboard.getSpot(groupB.get(j).getNum(), groupB.get(i).getNum())));
+                    }else {
+                        //         alvotes += (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum()));
+                        s.add(groupB.get(j), (groupB.get(j).getVotability() * allianceboard.getSpot(groupB.get(j).getNum(), groupB.get(i).getNum())));
+                    }
                 }
             }
             if (groupB.get(i).isImmune()) {
                 safe.add(groupB.get(i));
             }
+            if(s.size() == 0){
+                for (int j = 0; j < groupB.size(); j++) {
+                    if (i != j && !groupB.get(j).isImmune()){
+                        s.add(groupB.get(j), (groupB.get(j).getVotability() * allianceboard.getSpot(groupB.get(j).getNum(), groupB.get(i).getNum())));
+                    }
+                }
+            }
             vote = s.spin();
-            if (!losesVote.contains(groupB.get(i))) {
+            if (groupB.get(i).CanVote()) {
                 voteCnt.add(vote);
-                alliance.setSpot(groupB.get(i).getNum(), vote.getNum(), alliance.getSpot(groupB.get(i).getNum(), vote.getNum()) + 1);
+                allianceboard.setSpot(groupB.get(i).getNum(), vote.getNum(), allianceboard.getSpot(groupB.get(i).getNum(), vote.getNum()) + 2);
                 tribalCouncilVotes.put(groupB.get(i), vote);
                 voters.add(groupB.get(i));
                 vote.setVotesAgainst();
@@ -4415,27 +5031,31 @@ public class Game  {
         if (players.size() > 4) {
             System.out.println("Jeff Probst: If anybody has an idol or an advantage and would like to play it, now would be the time to do so.");
         }
+        nocount.clear();
         if (idolPlayers.size() > 0) {
             for (Player player : idolPlayers) {
-                int risk = r.nextInt();
+                double risk = r.nextDouble();
                 System.out.println(player + ": Jeff, I feel like there is a big target on my back and I am not safe tonight.");
-                if(risk>=.05) {
+                if(risk>=.025) {
                     System.out.println("Jeff Probst: This is an immunity idol, all votes for " + player + " will not count.");
-                    player.setScore(player.getScore() + 5);
+                    player.setScore(5);
                 }else{
                     System.out.println("Jeff Probst: This is " + ANSI_RED + "NOT" + ANSI_RESET + " an immunity idol, all votes for " + player + " will still count.");
-                    idolPlayers.remove(player);
+                    nocount.add(player);
                     Player tricker  = groupB.get(r.nextInt(groupB.size()));
-                    while(tricker!=player){
+                    while(tricker==player){
                         tricker  = groupB.get(r.nextInt(groupB.size()));
                     }
                     System.out.println(tricker + ": Gotcha!");
-                    tricker.setScore(tricker.getScore()+5);
-                    tricker.setVotability(tricker.getVotability()+3);
-                    player.setIdolCount(player.getIdolCount()-1);
+                    tricker.setScore(5);
+                    tricker.setVotability(10);
+                    player.setIdolCount(-1);
                     safe.remove(player);
-                    player.setScore(player.getScore() - 5);
+                    player.setScore(-5);
                 }
+            }
+            for(Player p: nocount){
+                idolPlayers.remove(p);
             }
         }
         if(voteSwapActive){
@@ -4471,12 +5091,13 @@ public class Game  {
             hasExileIdol = null;
         }
         System.out.println("Jeff Probst: I'll read the votes.");
+        System.out.println();
         for (int i = 0; i < idolPlayers.size(); i++) {
             if (idolBlock && match.equals(idolPlayers.get(i))) {
                 System.out.println("Jeff Probst: There is a idol block in here.");
                 System.out.println("Jeff Probst: It has been played on " + idolPlayers.get(i) + ".");
                 System.out.println("Jeff Probst: All votes for " + idolPlayers.get(i) + " will still count");
-                blockUser.setScore(blockUser.getScore() + 5);
+                blockUser.setScore(5);
                 safe.remove(idolPlayers.get(i));
                 idolPlayers.remove(idolPlayers.get(i));
                 i = i - 1;
@@ -4502,13 +5123,14 @@ public class Game  {
             if ((legacyUsable && voteName == legacy) || (idolPlayers.contains(player))) {
                 if (legacyUsable && voteName == legacy) {
                     System.out.println("Jeff Probst: " + voteName + ", does not count.");
-                    legacy.setScore(legacy.getScore() + 1);
+                    legacy.setScore(3);
+                    System.out.println();
                 } else {
                     System.out.println("Jeff Probst: " + voteName + ", does not count.");
-                    voteName.setScore(voteName.getScore() + 1);
+                    voteName.setScore(3);
+                    System.out.println();
                 }
             } else {
-                System.out.println("One vote: " + voteName);
                 votes.put(voteName, votes.getOrDefault(voteName, 0) + 1);
                 if (votes.get(voteName) > max) {
                     second.put(max, votedOut.get(max));
@@ -4534,9 +5156,37 @@ public class Game  {
                         break;
                     }
                 } else {
-                    System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    System.out.println("One vote: " + voteName);
+                    StringBuilder voteList = new StringBuilder("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    ArrayList<Player> used = new ArrayList<>();
+                    countedVotes = dramatize(countedVotes);
+                    for (Player p: countedVotes){
+                        if(p!=voteName && !used.contains(p)){
+                            voteList.append(", ").append(votes.get(p)).append(" votes for ").append(p);
+                            used.add(p);
+                        }
+                    }
+                    voteList.append(".");
+                    Scanner parse = new Scanner(String.valueOf(voteList));
+                    parse.useDelimiter("");
+                    String parsedD = "";
+                    int letters = 0;
+                    while (parse.hasNext()) {
+                        String nextLet = parse.next();
+                        parsedD = parsedD + nextLet;
+                        letters++;
+                        if (letters >= 140 && nextLet.equals(" ")) {
+                            parsedD = parsedD + System.lineSeparator();
+                            letters = 0;
+                        }
+                    }
+                    System.out.println(parsedD);
+                    System.out.println("Jeff Probst: " + votesLeft + " votes left.");
+                    System.out.println();
+                    //System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
                 }
             }
+            countedVotes.add(player);
             votesLeft--;
             previous.add(player);
         }
@@ -4551,7 +5201,42 @@ public class Game  {
         }
         if (listOfKeys.size() == 0) {
             System.out.println("Jeff Probst: There are no votes for anyone! We must revote.");
-            System.out.println("Jeff Probst: Here is who voted for who: ");
+            System.out.println();
+            System.out.println("Vote Summary: ");
+            HashMap<Player, Integer> voteSum = new HashMap<>();
+            for(Player p: tribalCouncilVotes.values()){
+                voteSum.put(p,voteSum.getOrDefault(p,0)+1);
+            }
+            ArrayList<Integer> numVotes = new ArrayList<Integer>(voteSum.values());
+            numVotes.sort(Comparator.reverseOrder());
+            System.out.print(numVotes.get(0));
+            numVotes.remove(0);
+            for(Integer v: numVotes){
+                System.out.print("-"+v);
+            }
+            tied = " -> None ";
+            System.out.println();
+            HashMap<Player, ArrayList<Player>> summary = new HashMap<>();
+            ArrayList<Player> votedpeeps = new ArrayList<>(tribalCouncilVotes.values());
+            for(Player votee: votedpeeps) {
+                if (!summary.containsKey(votee)) {
+                    ArrayList<Player> play = new ArrayList<>();
+                    for (Player voter : tribalCouncilVotes.keySet()) {
+                        if (tribalCouncilVotes.get(voter).equals(votee)) {
+                            play.add(voter);
+                            summary.put(votee, play);
+                        }
+                    }
+                    System.out.print(votee + ": ");
+                    for (Player pl : summary.get(votee)) {
+                        System.out.print(pl + " | ");
+                    }
+                    System.out.println();
+                }
+            }
+            System.out.println();
+            System.out.println("Voting Confessionals: ");
+            System.out.println();
             for(Player voter: voters) {
                 if (!tribalCouncilVotes.get(voter).equals(null)) {
                     System.out.println(voter + ": " + tribalCouncilVotes.get(voter));
@@ -4565,6 +5250,7 @@ public class Game  {
                 }
             }
             tribalCouncilVotes.clear();
+            countedVotes.clear();
             votes.clear();
             voters.clear();
             previous.clear();
@@ -4598,7 +5284,12 @@ public class Game  {
                     for (int i = 0; i < groupB.size(); i++) {
                         WeightedSpinner<Player> s = new WeightedSpinner<>();
                         for (int j = 0; j < groupB.size(); j++) {
-                            s.add(groupB.get(j), (groupB.get(j).getVotability() * alliance.getSpot(groupB.get(j).getNum(), groupB.get(i).getNum())));
+                            if(groupB.get(i).getTargets().contains(groupB.get(j))){
+                                s.add(groupB.get(j), (groupB.get(j).getVotability() * 10 *allianceboard.getSpot(groupB.get(j).getNum(), groupB.get(i).getNum())));
+                            }else {
+                                //         alvotes += (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum()));
+                                s.add(groupB.get(j), (groupB.get(j).getVotability() * allianceboard.getSpot(groupB.get(j).getNum(), groupB.get(i).getNum())));
+                            }
                         }
                         vote = s.spin();
                         voteCnt.add(vote);
@@ -4611,7 +5302,12 @@ public class Game  {
                         WeightedSpinner<Player> s = new WeightedSpinner<>();
                         for (int j = 0; j < groupB.size(); j++) {
                             if (i != j && !safe.contains(groupB.get(j))) {
-                                s.add(groupB.get(j), (groupB.get(j).getVotability() * alliance.getSpot(groupB.get(j).getNum(), groupB.get(i).getNum())));
+                                if(groupB.get(i).getTargets().contains(groupB.get(j))){
+                                    s.add(groupB.get(j), (groupB.get(j).getVotability() * 10 *allianceboard.getSpot(groupB.get(j).getNum(), groupB.get(i).getNum())));
+                                }else {
+                                    //         alvotes += (losers.getTribePlayers().get(j).getVotability() * allianceboard.getSpot(losers.getTribePlayers().get(j).getNum(), losers.getTribePlayers().get(i).getNum()));
+                                    s.add(groupB.get(j), (groupB.get(j).getVotability() * allianceboard.getSpot(groupB.get(j).getNum(), groupB.get(i).getNum())));
+                                }
                             }
                         }
                         vote = s.spin();
@@ -4622,13 +5318,43 @@ public class Game  {
                     }
                 }
                 System.out.println("Jeff Probst: I'll read the votes");
+                System.out.println();
                 ArrayList<Player> ordered2 = new ArrayList<>(dramatize(voteCnt));
+                votesLeft = ordered2.size() - 1;
                 for (Player player : ordered2) {
                     voteName = player;
                     voteName.setVotesAgainst();
                     System.out.println("One vote: " + voteName);
                     votes.put(voteName, votes.getOrDefault(voteName, 0) + 1);
-                    System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    StringBuilder voteList = new StringBuilder("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    ArrayList<Player> used = new ArrayList<>();
+                    countedVotes = dramatize(countedVotes);
+                    for (Player p: countedVotes){
+                        if(p!=voteName && !used.contains(p)){
+                            voteList.append(", ").append(votes.get(p)).append(" votes for ").append(p);
+                            used.add(p);
+                        }
+                    }
+                    voteList.append(".");
+                    Scanner parse = new Scanner(String.valueOf(voteList));
+                    parse.useDelimiter("");
+                    String parsedD = "";
+                    int letters = 0;
+                    while (parse.hasNext()) {
+                        String nextLet = parse.next();
+                        parsedD = parsedD + nextLet;
+                        letters++;
+                        if (letters >= 140 && nextLet.equals(" ")) {
+                            parsedD = parsedD + System.lineSeparator();
+                            letters = 0;
+                        }
+                    }
+                    System.out.println(parsedD);
+                    System.out.println("Jeff Probst: " + votesLeft + " votes left.");
+                    System.out.println();
+                    countedVotes.add(player);
+                    votesLeft--;
+                    //System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
                     if (votes.get(voteName) > max) {
                         second.put(max, votedOut.get(max));
                         max = votes.get(voteName);
@@ -4643,7 +5369,41 @@ public class Game  {
         } else if (listOfKeys.size() != 1) {
             System.out.println("Jeff Probst: There is a tie, we must revote!");
             System.out.println();
-            System.out.println("Jeff Probst: Here is who voted for who: ");
+            System.out.println("Vote Summary: ");
+            HashMap<Player, Integer> voteSum = new HashMap<>();
+            for(Player p: tribalCouncilVotes.values()){
+                voteSum.put(p,voteSum.getOrDefault(p,0)+1);
+            }
+            ArrayList<Integer> numVotes = new ArrayList<Integer>(voteSum.values());
+            numVotes.sort(Comparator.reverseOrder());
+            System.out.print(numVotes.get(0));
+            tied = " -> " + numVotes.remove(0);
+            for(Integer v: numVotes){
+                System.out.print("-"+v);
+                tied = tied + "-" + v.toString();
+            }
+            System.out.println();
+            HashMap<Player, ArrayList<Player>> summary = new HashMap<>();
+            ArrayList<Player> votedpeeps = new ArrayList<>(tribalCouncilVotes.values());
+            for(Player votee: votedpeeps) {
+                if (!summary.containsKey(votee)) {
+                    ArrayList<Player> play = new ArrayList<>();
+                    for (Player voter : tribalCouncilVotes.keySet()) {
+                        if (tribalCouncilVotes.get(voter).equals(votee)) {
+                            play.add(voter);
+                            summary.put(votee, play);
+                        }
+                    }
+                    System.out.print(votee + ": ");
+                    for (Player pl : summary.get(votee)) {
+                        System.out.print(pl + " | ");
+                    }
+                    System.out.println();
+                }
+            }
+            System.out.println();
+            System.out.println("Voting Confessionals: ");
+            System.out.println();
             for(Player voter: voters) {
                 if (!tribalCouncilVotes.get(voter).equals(null)) {
                     System.out.println(voter + ": " + tribalCouncilVotes.get(voter));
@@ -4657,6 +5417,7 @@ public class Game  {
                 }
             }
             tribalCouncilVotes.clear();
+            countedVotes.clear();
             votes.clear();
             second.clear();
             votedOut.clear();
@@ -4675,7 +5436,9 @@ public class Game  {
                 }
             }
             System.out.println("Jeff Probst: I'll read the votes");
+            System.out.println();
             ArrayList<Player> ordered2 = new ArrayList<>(dramatize(voteCnt));
+            votesLeft = ordered2.size() - 1;
             for (Player player : ordered2) {
                 for (int i = 0; i < previous.size(); i++) {
                     if (previous.get(previous.size() - 1) != null && previous.get(previous.size() - 1).equals(player)) {
@@ -4683,7 +5446,6 @@ public class Game  {
                     }
                 }
                 voteName = player;
-                System.out.println("One vote: " + voteName);
                 votes.put(voteName, votes.getOrDefault(voteName, 0) + 1);
                 if (votes.get(voteName) > max) {
                     second.put(max, votedOut.get(max));
@@ -4692,7 +5454,6 @@ public class Game  {
                 if (votes.get(voteName) == max) {
                     votedOut.put(max, voteName);
                 }
-                votesLeft = ordered2.size();
                 boolean sparkle = !Objects.equals(votes.get(previous.get(previous.size() - 1)), votes.get(voteName));
                 if ((votesLeft == 0 && sparkle) || votes.get(voteName) > groupB.size() / 2 || (previous.get(previous.size() - 1) != null && votes.get(previous.get(previous.size() - 1)) != null && votes.get(previous.get(previous.size() - 1)) + votesLeft < votes.get(voteName))) {
                     int placement = numPlayers - players.size() + 1;
@@ -4710,8 +5471,36 @@ public class Game  {
                         break;
                     }
                 } else {
-                    System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    System.out.println("One vote: " + voteName);
+                    StringBuilder voteList = new StringBuilder("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
+                    ArrayList<Player> used = new ArrayList<>();
+                    countedVotes = dramatize(countedVotes);
+                    for (Player p: countedVotes){
+                        if(p!=voteName && !used.contains(p)){
+                            voteList.append(", ").append(votes.get(p)).append(" votes for ").append(p);
+                            used.add(p);
+                        }
+                    }
+                    voteList.append(".");
+                    Scanner parse = new Scanner(String.valueOf(voteList));
+                    parse.useDelimiter("");
+                    String parsedD = "";
+                    int letters = 0;
+                    while (parse.hasNext()) {
+                        String nextLet = parse.next();
+                        parsedD = parsedD + nextLet;
+                        letters++;
+                        if (letters >= 140 && nextLet.equals(" ")) {
+                            parsedD = parsedD + System.lineSeparator();
+                            letters = 0;
+                        }
+                    }
+                    System.out.println(parsedD);
+                    System.out.println("Jeff Probst: " + votesLeft + " votes left.");
+                    System.out.println();
+                    //System.out.println("Jeff Probst: That is " + votes.get(voteName) + " votes for " + voteName);
                 }
+                countedVotes.add(player);
                 votesLeft--;
                 previous.add(player);
             }
@@ -4734,6 +5523,9 @@ public class Game  {
             System.out.println("Jeff Probst: " + ANSI_RED + gone + ANSI_RESET + " the tribe has spoken");
             exit(gone);
             eliminated.add(gone);
+            for(Alliance a: alliances){
+                a.removeMember(gone);
+            }
             if (players.size() == 3) {
                 thirdPlace = gone;
             }
@@ -4771,7 +5563,42 @@ public class Game  {
                 legacyIdol = 0;
             }
             System.out.println();
-            System.out.println("Jeff Probst: Here is who voted for who: ");
+            System.out.println("Vote Summary:");
+            HashMap<Player, Integer> voteSum = new HashMap<>();
+            for(Player p: tribalCouncilVotes.values()){
+                voteSum.put(p,voteSum.getOrDefault(p,0)+1);
+            }
+            ArrayList<Integer> numVotes = new ArrayList<Integer>(voteSum.values());
+            numVotes.sort(Comparator.reverseOrder());
+            System.out.print(numVotes.get(0));
+            String vct = " -> " + numVotes.remove(0);
+            for(Integer v: numVotes){
+                System.out.print("-"+v);
+                vct = vct + "-" + v.toString();
+            }
+            elimvotes.put(gone,tied + vct);
+            System.out.println();
+            HashMap<Player, ArrayList<Player>> summary = new HashMap<>();
+            ArrayList<Player> votedpeeps = new ArrayList<>(tribalCouncilVotes.values());
+            for(Player votee: votedpeeps) {
+                if (!summary.containsKey(votee)) {
+                    ArrayList<Player> play = new ArrayList<>();
+                    for (Player voter : tribalCouncilVotes.keySet()) {
+                        if (tribalCouncilVotes.get(voter).equals(votee)) {
+                            play.add(voter);
+                            summary.put(votee, play);
+                        }
+                    }
+                    System.out.print(votee + ": ");
+                    for (Player pl : summary.get(votee)) {
+                        System.out.print(pl + " | ");
+                    }
+                    System.out.println();
+                }
+            }
+            System.out.println();
+            System.out.println("Voting Confessionals: ");
+            System.out.println();
             for(Player voter: voters) {
                 if (tribalCouncilVotes.get(voter)!=null) {
                     System.out.println(voter + ": " + tribalCouncilVotes.get(voter));
@@ -4787,6 +5614,9 @@ public class Game  {
             voteAdd(groupB, max);
         }
         remain.addAll(groupB);
+        for(Player p: remain){
+            p.setCanVote(true);
+        }
         idolPlayers.clear();
         tribalCouncilVotes.clear();
         votedOut.clear();
@@ -4844,12 +5674,12 @@ public class Game  {
         switch (type) {
             case "Balance" -> {
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    total = a.getTribePlayers().get(i).getBalance() + total;
+                    total = a.getTribePlayers().get(i).getBalance()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    picker = a.getTribePlayers().get(i).getBalance() + picker;
+                    picker = a.getTribePlayers().get(i).getBalance()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -4858,12 +5688,12 @@ public class Game  {
             }
             case "Strength" -> {
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    total = a.getTribePlayers().get(i).getStrength() + total;
+                    total = a.getTribePlayers().get(i).getStrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    picker = a.getTribePlayers().get(i).getStrength() + picker;
+                    picker = a.getTribePlayers().get(i).getStrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -4872,12 +5702,12 @@ public class Game  {
             }
             case "Strategy" -> {
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    total = a.getTribePlayers().get(i).getStrategy() + total;
+                    total = a.getTribePlayers().get(i).getStrategy()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    picker = a.getTribePlayers().get(i).getStrategy() + picker;
+                    picker = a.getTribePlayers().get(i).getStrategy()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -4886,12 +5716,12 @@ public class Game  {
             }
             case "Balance and Strength" -> {
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    total = a.getTribePlayers().get(i).balnstrength() + total;
+                    total = a.getTribePlayers().get(i).balnstrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    picker = a.getTribePlayers().get(i).balnstrength() + picker;
+                    picker = a.getTribePlayers().get(i).balnstrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -4900,12 +5730,12 @@ public class Game  {
             }
             case "Balance and Strategy" -> {
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    total = a.getTribePlayers().get(i).balnstrat() + total;
+                    total = a.getTribePlayers().get(i).balnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    picker = a.getTribePlayers().get(i).balnstrat() + picker;
+                    picker = a.getTribePlayers().get(i).balnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -4914,12 +5744,12 @@ public class Game  {
             }
             case "Strength and Strategy" -> {
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    total = a.getTribePlayers().get(i).strengthnstrat() + total;
+                    total = a.getTribePlayers().get(i).strengthnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < a.getTribePlayers().size(); i++) {
-                    picker = a.getTribePlayers().get(i).strengthnstrat() + picker;
+                    picker = a.getTribePlayers().get(i).strengthnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -4930,20 +5760,21 @@ public class Game  {
         Player immunity = a.getTribePlayers().get(numImmune);
         System.out.println("Jeff Probst: " + ANSI_GOLD + immunity + ANSI_RESET + " wins immunity and is safe tonight at Tribal Council");
         a.getTribePlayers().get(numImmune).setImmune(true);
-        a.getTribePlayers().get(numImmune).setVotability(immunity.getVotability() + 1);
-        a.getTribePlayers().get(numImmune).setScore(a.getTribePlayers().get(numImmune).getScore() + 4);
-        a.getTribePlayers().get(numImmune).setImmWins(a.getTribePlayers().get(numImmune).getImmWins() + 1);
+        a.getTribePlayers().get(numImmune).setThreatlvl(5);
+        a.getTribePlayers().get(numImmune).setScore(4);
+        a.getTribePlayers().get(numImmune).setImmWins(1);
+        immunity.setMorale(immunity.getMorale()+3);
         immunityWins.put(a.getTribePlayers().get(numImmune), a.getTribePlayers().get(numImmune).getImmWins());
         total = 0;
         switch (type) {
             case "Balance" -> {
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    total = b.getTribePlayers().get(i).getBalance() + total;
+                    total = b.getTribePlayers().get(i).getBalance()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    picker = b.getTribePlayers().get(i).getBalance() + picker;
+                    picker = b.getTribePlayers().get(i).getBalance()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -4952,12 +5783,12 @@ public class Game  {
             }
             case "Strength" -> {
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    total = b.getTribePlayers().get(i).getStrength() + total;
+                    total = b.getTribePlayers().get(i).getStrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    picker = b.getTribePlayers().get(i).getStrength() + picker;
+                    picker = b.getTribePlayers().get(i).getStrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -4966,12 +5797,12 @@ public class Game  {
             }
             case "Strategy" -> {
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    total = b.getTribePlayers().get(i).getStrategy() + total;
+                    total = b.getTribePlayers().get(i).getStrategy()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    picker = b.getTribePlayers().get(i).getStrategy() + picker;
+                    picker = b.getTribePlayers().get(i).getStrategy()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -4980,12 +5811,12 @@ public class Game  {
             }
             case "Balance and Strength" -> {
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    total = b.getTribePlayers().get(i).balnstrength() + total;
+                    total = b.getTribePlayers().get(i).balnstrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    picker = b.getTribePlayers().get(i).balnstrength() + picker;
+                    picker = b.getTribePlayers().get(i).balnstrength()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -4994,12 +5825,12 @@ public class Game  {
             }
             case "Balance and Strategy" -> {
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    total = b.getTribePlayers().get(i).balnstrat() + total;
+                    total = b.getTribePlayers().get(i).balnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    picker = b.getTribePlayers().get(i).balnstrat() + picker;
+                    picker = b.getTribePlayers().get(i).balnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -5008,12 +5839,12 @@ public class Game  {
             }
             case "Strength and Strategy" -> {
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    total = b.getTribePlayers().get(i).strengthnstrat() + total;
+                    total = b.getTribePlayers().get(i).strengthnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + total;
                 }
                 int immune = r.nextInt(total);
                 int picker = 0;
                 for (int i = 0; i < b.getTribePlayers().size(); i++) {
-                    picker = b.getTribePlayers().get(i).strengthnstrat() + picker;
+                    picker = b.getTribePlayers().get(i).strengthnstrat()+ tribes.get(0).getTribePlayers().get(i).getMorale() + picker;
                     if (immune < picker) {
                         numImmune = i;
                         break;
@@ -5024,9 +5855,10 @@ public class Game  {
         immunity = b.getTribePlayers().get(numImmune);
         System.out.println("Jeff Probst: " + ANSI_GOLD + immunity + ANSI_RESET + " wins immunity and is safe tonight at Tribal Council");
         b.getTribePlayers().get(numImmune).setImmune(true);
-        b.getTribePlayers().get(numImmune).setVotability(immunity.getVotability() + 1);
-        b.getTribePlayers().get(numImmune).setScore(b.getTribePlayers().get(numImmune).getScore() + 4);
-        b.getTribePlayers().get(numImmune).setImmWins(b.getTribePlayers().get(numImmune).getImmWins() + 1);
+        b.getTribePlayers().get(numImmune).setThreatlvl(5);
+        b.getTribePlayers().get(numImmune).setScore(4);
+        b.getTribePlayers().get(numImmune).setImmWins(1);
+        immunity.setMorale(immunity.getMorale()+3);
         immunityWins.put(b.getTribePlayers().get(numImmune), b.getTribePlayers().get(numImmune).getImmWins());
         System.out.println();
         System.out.println("-------------------------");
@@ -5156,6 +5988,7 @@ public class Game  {
                 secretActwinner.setStrength(secretActwinner.getStrength()+5);
                 secretActwinner.setStrategy(secretActwinner.getStrategy()+5);
                 secretActwinner.setBalance(secretActwinner.getBalance()+5);
+                secretActwinner.setMorale(secretActwinner.getMorale()+3);
             }
             else if(pick<10){
                 System.out.println("Jeff Probst: A steaming hot bath! Starting Bid $120");
@@ -5219,6 +6052,10 @@ public class Game  {
             System.out.println("Jeff Probst: As per your wishes, get out.");
             players.remove(quit);
             eliminated.add(quit);
+            for(Alliance a: alliances){
+                a.removeMember(quit);
+            }
+            elimvotes.put(quit, " -> Quit");
             for(Tribe tribe : tribes){
                 tribe.getTribePlayers().remove(quit);
             }
@@ -5240,6 +6077,10 @@ public class Game  {
             System.out.println("Jeff probst: Please say goodbye to your tribe");
             players.remove(medevac);
             eliminated.add(medevac);
+            for(Alliance a: alliances){
+                a.removeMember(medevac);
+            }
+            elimvotes.put(medevac, " -> Medevac");
             for(Tribe tribe : tribes){
                 tribe.getTribePlayers().remove(medevac);
             }
@@ -5297,7 +6138,7 @@ public class Game  {
             }
         }*/
         eliminated.remove(returner);
-        returner.setScore(returner.getScore()+3);
+        returner.setScore(3);
         System.out.println("Jeff Probst: " + returner + ", you will return to the game with new life!");
         System.out.println("Jeff Probst: Here is a buff, good luck!");
         EdgeReturnCnt++;
@@ -5340,13 +6181,13 @@ public class Game  {
             String phrase = phrases.get(r.nextInt(phrases.size()));
             System.out.println(p1 + " " + phrase);
             if (p1.getVotability() + (values.get(phrase)) > 0) {
-                p1.setVotability(p1.getVotability() + values.get(phrase));
+                p1.setVotability(values.get(phrase));
             }
             phrases.remove(phrase);
             phrase = phrases.get(r.nextInt(phrases.size()));
             System.out.println(p2 + " " + phrase);
             if (p2.getVotability() + (values.get(phrase)) > 0) {
-                p2.setVotability(p2.getVotability() + values.get(phrase));
+                p2.setVotability(values.get(phrase));
             }
         }
         System.out.println();
@@ -5359,6 +6200,7 @@ public class Game  {
             Scores p = new Scores(eliminated.get(i).getScore(), eliminated.get(i),numPlayers-i);
             totals.add(p);
         }
+        System.out.println("Point Totals: ");
         for (Scores total : totals) {
             System.out.println(total);
         }
@@ -5368,6 +6210,11 @@ public class Game  {
     }
 
     public void tribeSwap(int swaptype){
+        for(Tribe t: tribes){
+            for(Player p: t.getTribePlayers()){
+                p.setLastTribeColor(t.getColor());
+            }
+        }
         if(swaptype==2) {
             if(round%4== 0 && round!=0) {
                 ArrayList<Player> function = new ArrayList<>();
@@ -5473,7 +6320,7 @@ public class Game  {
         for(int i = 0; i<losers.size(); i++){
             if(tribalCouncilVotes.containsKey(losers.get(i))){
                 if(tribalCouncilVotes.get(losers.get(i)).equals(votedOut.get(max))){
-                    losers.get(i).setScore(losers.get(i).getScore()+2);
+                    losers.get(i).setScore(2);
                 }
             }
         }
@@ -5565,6 +6412,7 @@ public class Game  {
         System.out.println("Jeff Probst: Please bring me your torch");
         System.out.println("Jeff Probst: The game has spoken");
         exit(votedOut.get(whiteRock));
+        elimvotes.put(votedOut.get(whiteRock)," -> Rocks");
         for (Player loser : losers) {
             loser.setImmune(false);
         }
@@ -5572,11 +6420,15 @@ public class Game  {
             championAdv = false;
             championUser = null;
         }
-        for(Tribe tribe: tribes){
+        for(Tribe tribe: tribes) {
             tribe.getTribePlayers().remove(votedOut.get(whiteRock));
         }
         players.remove(votedOut.get(whiteRock));
+        losingTribe.getTribePlayers().remove(votedOut.get(whiteRock));
         eliminated.add(votedOut.get(whiteRock));
+        for(Alliance a: alliances){
+            a.removeMember(votedOut.get(whiteRock));
+        }
         if (twoOrThree) {
             if (players.size() <= juryNum+1) {
                 if(RI || EOE || ETM){
@@ -5672,11 +6524,12 @@ public class Game  {
                 }
                 if(wins && count==0){
                     winner = tribe;
-                    System.out.println("Jeff Probst: " + tribe.getColor()+tribe.tribeName()+ ANSI_RESET +" you win!");
+                    System.out.println("Jeff Probst: " + tribe.getColor()+tribe.tribeName()+ ANSI_RESET +" wins reward!");
                     for(Player player : tribe.getTribePlayers()){
                         player.setBalance(player.getBalance()+1);
                         player.setStrategy(player.getStrategy()+1);
                         player.setStrength(player.getStrength()+1);
+                        player.setMorale(player.getMorale()+2);
                     }
                     count++;
                 }else{
@@ -5686,6 +6539,9 @@ public class Game  {
                         System.out.println("Jeff Probst: Looks like " + exiled + " will be sent to Exile Island.");
                         System.out.println("Jeff Probst: Grab your stuff and head out!");*/
                     System.out.println("Jeff Probst: Sorry " + tribe.getColor() + tribe.tribeName()+ ANSI_RESET + " I've got nothing for you, head back to camp.");
+                    for(Player player: tribe.getTribePlayers()){
+                        player.setMorale(player.getMorale()-1);
+                    }
                 }
             }
             if(EI){
@@ -5707,6 +6563,10 @@ public class Game  {
             System.out.println(indChalDescriptions.get(chalName));
             Player dubs = players.get(r.nextInt(players.size()));
             System.out.println("Jeff Probst: Congrats "+ ANSI_LIME + dubs+ ANSI_RESET + " you have won reward!");
+            dubs.setRewardWins();
+            dubs.setMorale(dubs.getMorale()+5);
+            dubs.setThreatlvl(3);
+            rewardWins.put(dubs,dubs.getRewardWins());
             if(EI) {
                 System.out.println("Jeff Probst: Now pick someone to head to Exile Island.");
                 System.out.println("Jeff Probst: They will be there until the next immunity challenge.");
@@ -5758,9 +6618,15 @@ public class Game  {
                 }
                 System.out.println("Jeff Probst: " + b.getTribePlayers().toString() + " I've got nothing for you, head back to camp");
                 for(Player player : a.getTribePlayers()){
+                    player.setRewardWins();
+                    rewardWins.put(player,player.getRewardWins());
                     player.setBalance(player.getBalance()+1);
                     player.setStrategy(player.getStrategy()+1);
                     player.setStrength(player.getStrength()+1);
+                    player.setMorale(player.getMorale()+2);
+                }
+                for(Player player : b.getTribePlayers()){
+                    player.setMorale(player.getMorale()-1);
                 }
             }else{
                 System.out.println("Jeff Probst: Team 2 wins!");
@@ -5774,9 +6640,15 @@ public class Game  {
                 }
                 System.out.println("Jeff Probst: " + a.getTribePlayers().toString() + " I've got nothing for you, head back to camp");
                 for(Player player : b.getTribePlayers()){
+                    player.setRewardWins();
+                    rewardWins.put(player,player.getRewardWins());
                     player.setBalance(player.getBalance()+1);
                     player.setStrategy(player.getStrategy()+1);
                     player.setStrength(player.getStrength()+1);
+                    player.setMorale(player.getMorale()+2);
+                }
+                for(Player player: a.getTribePlayers()){
+                    player.setMorale(player.getMorale()-1);
                 }
             }
         }
@@ -5800,11 +6672,12 @@ public class Game  {
         System.out.println("-------------------------");
         System.out.println();
         System.out.println(exiled + " is on Exile Island.");
+        exiled.setMorale(exiled.getMorale()-1);
         confessional(exiled);
         int find = r.nextInt(6)+1;
         if(find == 4 && exileIdol == 1){
             System.out.println(exiled + " found the Exile Idol!");
-            exiled.setIdolCount(exiled.getIdolCount()+1);
+            exiled.setIdolCount(1);
             exileIdol = 0;
             hasExileIdol = exiled;
         }
@@ -5909,18 +6782,21 @@ public class Game  {
         System.out.println("Jeff Probst: Goodluck!");
         System.out.println();
         System.out.println("Jeff Probst: I'll Read The Votes");
+        System.out.println();
         ArrayList<Player> ftcvotes = new ArrayList<>();
         HashMap<Player, Integer> votes = new HashMap<>();
         Player vote = new Player();
         for (Player player : jury) {
-            int finalVote = r.nextInt(tribes.get(0).getTribePlayers().get(0).getScore()*alliance.getSpot(player.getNum(),tribes.get(0).getTribePlayers().get(0).getNum()) + tribes.get(0).getTribePlayers().get(1).getScore()* alliance.getSpot(player.getNum(), tribes.get(0).getTribePlayers().get(1).getNum()));
-            if (finalVote < tribes.get(0).getTribePlayers().get(0).getScore()*alliance.getSpot(player.getNum(), tribes.get(0).getTribePlayers().get(0).getNum())) {
+            int finalVote = r.nextInt(tribes.get(0).getTribePlayers().get(0).getScore()*allianceboard.getSpot(player.getNum(),tribes.get(0).getTribePlayers().get(0).getNum()) + tribes.get(0).getTribePlayers().get(1).getScore()* allianceboard.getSpot(player.getNum(), tribes.get(0).getTribePlayers().get(1).getNum()));
+            if (finalVote < tribes.get(0).getTribePlayers().get(0).getScore()*allianceboard.getSpot(player.getNum(), tribes.get(0).getTribePlayers().get(0).getNum())) {
                 finalTribalVotes.put(player, tribes.get(0).getTribePlayers().get(0));
+                ftvotes.put(tribes.get(0).getTribePlayers().get(0),ftvotes.getOrDefault(tribes.get(0).getTribePlayers().get(0),0)+1);
                 vote = tribes.get(0).getTribePlayers().get(0);
                 ftcvotes.add(vote);
             } else {
                 finalTribalVotes.put(player, tribes.get(0).getTribePlayers().get(1));
                 vote = tribes.get(0).getTribePlayers().get(1);
+                ftvotes.put(tribes.get(0).getTribePlayers().get(1),ftvotes.getOrDefault(tribes.get(0).getTribePlayers().get(1),0)+1);
                 ftcvotes.add(vote);
             }
         }
@@ -6053,23 +6929,30 @@ public class Game  {
     }
 
     public void placements(){
-        System.out.println("Sole Survivor: " + soleSurvivor);
-        System.out.println("2: " + secondPlace);
+        System.out.println("Placements:");
+        System.out.println("Sole Survivor: " + soleSurvivor + " -> " + ftvotes.get(soleSurvivor) +" votes to win.");
+        System.out.println("2: " + secondPlace + " -> " + ftvotes.getOrDefault(secondPlace,0) + " votes to win.");
         if(!twoOrThree) {
-            System.out.println("3: " + thirdPlace);
+            System.out.println("3: " + thirdPlace + " -> " + ftvotes.getOrDefault(thirdPlace,0) + " votes to win.");
         }
         int j;
         for(int i = eliminated.size();i>0;i--){
             j= eliminated.size()+3-i;
             if(twoOrThree) {
-                System.out.println(j + ": " + eliminated.get(i - 1));
+                System.out.println(j + ": " + eliminated.get(i - 1) + elimvotes.get(eliminated.get(i-1)));
             }else{
-                System.out.println(j+1 + ": " + eliminated.get(i - 1));
+                System.out.println(j+1 + ": " + eliminated.get(i - 1) + elimvotes.get(eliminated.get(i-1)));
             }
         }
         System.out.println();
         System.out.println("-------------------------");
         System.out.println();
+    }
+
+    public void allianceDissolve(Alliance a){
+        a.removeAll();
+        System.out.println("The " + a.getName() + " Alliance dissolved.");
+        alliances.remove(a);
     }
 
     public void journey(){
@@ -6096,7 +6979,13 @@ public class Game  {
             for (Player p: journeying.keySet()){
                 if(journeying.get(p)) {
                     System.out.println(p + " risked their vote and has been rewarded.");
-                    advantageFind(p, true);
+                    if(!advantages && !Idol) {
+                        p.setScore(5);
+                    }else if(!advantages){
+                        idolFind(p,true);
+                    }else {
+                        advantageFind(p, true);
+                    }
                 }
             }
         }else if (!journeying.containsValue(true)){
@@ -6104,6 +6993,9 @@ public class Game  {
         }
         else{
             System.out.println("All players risked their vote, and thus will lose their vote.");
+            for(Player p:journeying.keySet()){
+                p.setCanVote(false);
+            }
             losesVote.addAll(journeying.keySet());
         }
         System.out.println();
@@ -6113,15 +7005,137 @@ public class Game  {
 
     public void immunityWins(){
         System.out.println("Immunity Wins: ");
-        System.out.println(immunityWins);
+        int max = -1;
+        ArrayList<Player> base = new ArrayList<>();
+        for(Player player: playerStorage){
+            if(player.getImmWins()>0){
+                base.add(player);
+                if(max<player.getImmWins()){
+                    max = player.getImmWins();
+                }
+            }
+        }while(max>0) {
+            for (Player player : playerStorage) {
+                if (player.getImmWins() == max) {
+                    System.out.println(player.getImmWins() + ": " + player);
+                }
+            }
+            max--;
+        }
+        System.out.println();
+        System.out.println("-------------------------");
+        System.out.println();
+    }
+
+    public void rewardWins(){
+        System.out.println("Reward Wins: ");
+        int max = -1;
+        ArrayList<Player> base = new ArrayList<>();
+        for(Player player: playerStorage){
+            if(player.getRewardWins()>0){
+                base.add(player);
+                if(max<player.getRewardWins()){
+                    max = player.getRewardWins();
+                }
+            }
+        }while(max>0) {
+            for (Player player : playerStorage) {
+                if (player.getRewardWins() == max) {
+                    System.out.println(player.getRewardWins() + ": " + player);
+                }
+            }
+            max--;
+        }
+        System.out.println();
+        System.out.println("-------------------------");
+        System.out.println();
+    }
+
+    public void challengeWins(){
+        System.out.println("Challenge Wins: ");
+        int max = -1;
+        ArrayList<Player> base = new ArrayList<>();
+        for(Player player: playerStorage){
+            if(player.challengeWins()>0){
+                base.add(player);
+                if(max<player.challengeWins()){
+                    max = player.challengeWins();
+                }
+            }
+        }while(max>0) {
+            for (Player player : playerStorage) {
+                if (player.challengeWins() == max) {
+                    System.out.println(player.challengeWins() + ": " + player);
+                }
+            }
+            max--;
+        }
         System.out.println();
         System.out.println("-------------------------");
         System.out.println();
     }
 
     public void playerAttributes(){
+        System.out.println("Player Mindset and Attributes: ");
         for (Player player : playerStorage) {
             System.out.println(player.fullstats());
+        }
+        System.out.println();
+        System.out.println("-------------------------");
+        System.out.println();
+    }
+    public void allianceSummary(){
+        System.out.println("Alliance Summary:");
+        if (alliances.size() == 0) {
+            System.out.println("There are no alliances.");
+        }else{
+            ArrayList<Alliance> copy = new ArrayList<>(alliances);
+            for(Alliance a: copy){
+                System.out.println(a.toString());
+                if(a.getMembers().size()==1){
+                    allianceDissolve(a);
+                }else if(a.getMembers().size()==players.size()) {
+                    allianceDissolve(a);
+                }else{
+                    a.strategize(losingTribe.getTribePlayers());
+                }
+                System.out.println("-------------------------");
+            }
+        }
+        Alliance comp = null;
+        Alliance toss = null;
+        for(Alliance a: alliances){
+            if(comp != null && a.getMembers().containsAll(comp.getMembers()) && comp.getMembers().containsAll(a.getMembers())){
+                toss = a;
+            }
+            comp = a;
+        }
+        alliances.remove(toss);
+        System.out.println();
+        System.out.println("-------------------------");
+        System.out.println();
+    }
+
+    public void idolAndAdvSummary(){
+        for(Tribe tribe: tribes){
+            boolean none = true;
+            System.out.println("Idol and Advantage Summary for the " + tribe.getColor() + tribe.tribeName() + ANSI_RESET + " Tribe: ");
+            for(Player p: tribe.getTribePlayers()){
+                if(p.getIdolCount()>0){
+                    System.out.println(p + " has " + p.getIdolCount() + " Idol(s)");
+                    none = false;
+                }
+                for(int i = 0; i<10;i++){
+                    if(p.getAdvantages(i) > 0){
+                        System.out.println(p + " has " + p.getAdvantages(i) + " " + p.getAdvName(i));
+                        none = false;
+                    }
+                }
+            }
+            if(none){
+                System.out.println("There are no Idols or Advantages on the " + tribe.getColor() + tribe.tribeName() + ANSI_RESET + " Tribe");
+            }
+            System.out.println();
         }
         System.out.println();
         System.out.println("-------------------------");

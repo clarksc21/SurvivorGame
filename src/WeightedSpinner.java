@@ -6,6 +6,12 @@ public class WeightedSpinner<E> {
     private double totalWeight;
     private List<E> items;
     private List<Double> weights;
+    int minIdx = -1;
+
+    public int size(){
+        return items.size();
+    }
+
 
     public WeightedSpinner() {
         totalWeight = 0;
@@ -17,9 +23,19 @@ public class WeightedSpinner<E> {
         if (weight < 0) {
             throw new IllegalArgumentException();
         }
-        items.add(item);
-        weights.add(weight);
-        totalWeight += weight;
+        double mini = min();
+        if(items.size()<2) {
+            items.add(item);
+            weights.add(weight);
+            totalWeight += weight;
+        }else if(items.size() == 2 && weight>mini){
+            weights.remove(minIdx);
+            totalWeight -= mini;
+            items.remove(minIdx);
+            items.add(item);
+            weights.add(weight);
+            totalWeight += weight;
+        }
     }
 
     public E spin() {
@@ -39,5 +55,16 @@ public class WeightedSpinner<E> {
 
     public double getTotalWeight() {
         return totalWeight;
+    }
+
+    public double min(){
+        double min = 100000;
+        for(int i = 0; i<weights.size(); i++){
+            if(weights.get(i)<min){
+                min = weights.get(i);
+                minIdx = i;
+            }
+        }
+        return min;
     }
 }

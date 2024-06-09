@@ -46,7 +46,7 @@ public class Tribe {
     }
 
     public int boostNStats(){
-        return boost + tribeStats();
+        return getBoost() + tribeStats();
     }
 
     public void addPlayer(Player p){
@@ -66,6 +66,9 @@ public class Tribe {
     }
 
     public int getBoost() {
+        for(Player p: tribePlayers){
+            boost = boost + p.getMorale();
+        }
         return boost;
     }
 
