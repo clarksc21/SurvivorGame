@@ -55,6 +55,7 @@ public class Game  {
     private boolean changes = false;
     private boolean CYCA = false;
     private boolean IB = false;
+
     private static boolean advantages = true;
     private ArrayList<String> confessionalSays = new ArrayList<>();
     private static ArrayList<Player> redemptionPlayers = new ArrayList<>();
@@ -179,7 +180,7 @@ public class Game  {
         }
         if (RI) {
             a.RedemptionReturn();
-        }
+        } //fill
         while (players.size() > 4) {
             if (RI && redemptionPlayers.size() >= 3) {
                 a.redemptionIsland();
