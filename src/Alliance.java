@@ -85,7 +85,7 @@ public class Alliance{
             goats.sort((p1, p2) -> Integer.compare(
                     p2.getStrength() + p2.getStrategy() + p2.getVotability(),
                     p1.getStrength() + p1.getStrategy() + p1.getVotability()));
-            Collections.reverse(goats);
+            Collections.reverse(goats); //fixing
             Player biggestGoat = !goats.isEmpty() ? goats.get(0) : null;
             if(biggestGoat!=null) {
                 System.out.println(name + " alliance is targeting " + biggestGoat.getName() + " as the biggest goat.");
