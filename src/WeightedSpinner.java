@@ -26,14 +26,14 @@ public class WeightedSpinner<E> {
         double mini = min();
         if(items.size()<2) {
             items.add(item);
-            weights.add(weight);
+            weights.add(Double.valueOf(weight));
             totalWeight += weight;
         }else if(items.size() == 2 && weight>mini){
             weights.remove(minIdx);
             totalWeight -= mini;
             items.remove(minIdx);
             items.add(item);
-            weights.add(weight);
+            weights.add(Double.valueOf(weight));
             totalWeight += weight;
         }
     }

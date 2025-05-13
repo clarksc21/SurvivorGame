@@ -30,10 +30,10 @@ public class Tribe {
         colors.add(ANSI_CYAN);
         colors.add(ANSI_WHITE);
         int used = r.nextInt(colors.size());
-        while(usedColors.contains(used)){
+        while(usedColors.contains(Integer.valueOf(used))){
             used = r.nextInt(colors.size());
         }
-        usedColors.add(used);
+        usedColors.add(Integer.valueOf(used));
         return colors.get(used);
     }
 
@@ -51,6 +51,7 @@ public class Tribe {
 
     public void addPlayer(Player p){
         tribePlayers.add(p);
+        p.setTribe(this);
     }
 
     public void setTribeName(String tribeName) {
@@ -66,9 +67,6 @@ public class Tribe {
     }
 
     public int getBoost() {
-        for(Player p: tribePlayers){
-            boost = boost + p.getMorale();
-        }
         return boost;
     }
 

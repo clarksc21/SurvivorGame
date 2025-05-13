@@ -11,9 +11,11 @@ public class Player {
     private ArrayList<String> mindsets = new ArrayList<>();
     private boolean immune;
     private int immWins;
-    private int morale;
+    private int idolsInPossesion;
     private String lastTribeColor;
+    private Tribe tribe;
     private int threatlvl;
+    private ArrayList<String> advFound;
     private int age;
     private int trustworthiness;
     private int deceitfulness;
@@ -31,7 +33,7 @@ public class Player {
     private int votesAgainst = 0;
 
     public int getAdvantages(int type) {
-        return advantages.get(type);
+        return advantages.get(Integer.valueOf(type));
     }
 
     public void setVotesAgainst(){
@@ -48,6 +50,18 @@ public class Player {
         return t;
     }
 
+    public void addAdvFound(String adv){
+        advFound.add(adv);
+    }
+
+    public ArrayList<String> getAdvFound(){
+        return advFound;
+    }
+
+    public int cntAdvFound(){
+        return advFound.size();
+    }
+
     public int getVotesAgainst(){
         return votesAgainst;
     }
@@ -57,15 +71,17 @@ public class Player {
     }
 
     public void setLastTribeColor(String ltc){
-        this.lastTribeColor = ltc;
+        if(ltc != null) {
+            this.lastTribeColor = ltc;
+        }
     }
 
     public void setAdvantages(int type,int amt) {
-        advantages.replace(type,amt);
+        advantages.replace(Integer.valueOf(type),Integer.valueOf(amt));
     }
 
     public int getVotability() {
-        return votability + strength + strategy + deceitfulness - trustworthiness + threatlvl;
+        return Math.max(votability + strength + strategy + deceitfulness - trustworthiness + threatlvl, 1);
     }
 
     public void setVotability(int votability) {
@@ -80,10 +96,17 @@ public class Player {
         return idolCount;
     }
 
-    public void setIdolCount(int idolCount) {
-        this.idolCount += idolCount;
+    public void setIdolCount(){
+        this.idolCount ++;
     }
 
+    public void setIdolsInPossesion(int idols){
+        idolsInPossesion += idols;
+    }
+
+    public int getIdolsInPossesion(){
+        return idolsInPossesion;
+    }
     public int getScore() {
         return score;
     }
@@ -93,7 +116,7 @@ public class Player {
     }
 
     public void setTrustworthiness(int trustworthiness) {
-        this.trustworthiness = trustworthiness;
+        this.trustworthiness += trustworthiness;
     }
 
     public int getDeceitfulness() {
@@ -101,7 +124,7 @@ public class Player {
     }
 
     public void setDeceitfulness(int deceitfulness) {
-        this.deceitfulness = deceitfulness;
+        this.deceitfulness += deceitfulness;
     }
 
     public int getAge() {
@@ -331,7 +354,12 @@ public class Player {
             return "Vote Swap Advantage";
         }else if(i==9){
             return "Safety without Power Advantage";
-        }else{
+        }else if(i==10){
+            return "50/50 Coin";
+        }else if(i==11){
+            return "Spite Advantage";
+        }
+        else{
             return "";
         }
     }
@@ -363,16 +391,16 @@ public class Player {
         this.num = num;
     }
 
-    public int getMorale() {
-        return morale;
-    }
-
-    public void setMorale(int morale) {
-        this.morale = morale;
-    }
-
     public List<Alliance> getAlliances(){
         return alliances;
+    }
+
+    public void setTribe(Tribe t){
+        this.tribe = t;
+    }
+
+    public Tribe getTribe(){
+        return tribe;
     }
 
     public void addAlliance(Alliance alliance) {
@@ -409,9 +437,11 @@ public class Player {
         this.immune = false;
         this.immWins = 0;
         this.score = 0;
+        this.idolsInPossesion = 0;
+        this.advFound = new ArrayList<>();
         this.alliances = new ArrayList<>();
         this.age = r.nextInt(50) +18;
-        this.morale = 0;
+        this.tribe = null;
         this.mindset = setMindset();
         this.strategy = startStrategy();
         this.strength = startStrength();
@@ -423,8 +453,8 @@ public class Player {
         this.threatlvl = 1;
         this.votability = startVotability();
         this.num = num;
-        for(int i = 0;i<10;i++){
-            advantages.put(i,0);
+        for(int i = 0;i<12;i++){
+            advantages.put(Integer.valueOf(i),Integer.valueOf(0));
         }
     }
 
@@ -434,12 +464,14 @@ public class Player {
     }
 
     public Player(){
+        this.alliances = new ArrayList<>();
+
     }
 
     public int sumAdv(){
         int sum = 0;
-        for (int i = 0; i < 10; i++) {
-            sum+=advantages.get(i);
+        for (int i = 0; i < 11; i++) {
+            sum+=advantages.get(Integer.valueOf(i));
         }
         return sum;
     }
@@ -453,6 +485,6 @@ public class Player {
     }
 
     public String fullstats(){
-        return name + ": Mindset " + mindset +", Balance " + balance + ", Strength  " + strength + ", Strategy " + strategy + ", Morale " + morale + ", Trustworthiness " + trustworthiness + ", Deceitfulness " + deceitfulness + ", Threat Level " + threatlvl;
+        return name + ": Mindset " + mindset +", Balance " + balance + ", Strength  " + strength + ", Strategy " + strategy + ", Trustworthiness " + trustworthiness + ", Deceitfulness " + deceitfulness + ", Threat Level " + threatlvl;
     }
 }

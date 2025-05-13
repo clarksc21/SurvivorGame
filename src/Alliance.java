@@ -1,7 +1,4 @@
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class Alliance{
     private String name;
@@ -88,10 +85,12 @@ public class Alliance{
             goats.sort((p1, p2) -> Integer.compare(
                     p2.getStrength() + p2.getStrategy() + p2.getVotability(),
                     p1.getStrength() + p1.getStrategy() + p1.getVotability()));
-            goats.reversed();
+            Collections.reverse(goats);
             Player biggestGoat = !goats.isEmpty() ? goats.get(0) : null;
-            System.out.println(name + " alliance is targeting " + biggestGoat.getName() + " as the biggest goat.");
-            target = biggestGoat;
+            if(biggestGoat!=null) {
+                System.out.println(name + " alliance is targeting " + biggestGoat.getName() + " as the biggest goat.");
+                target = biggestGoat;
+            }
         }
 
         // Internal alliance dynamics
@@ -135,6 +134,14 @@ public class Alliance{
                 target = strongestMember;
             }
         }
+    }
+
+    public Tribe majorityTribe(){
+        Tribe majority = null;
+        for(Player p: members){
+            majority = p.getTribe();
+        }
+        return majority;
     }
 
     public void removeAll(){
