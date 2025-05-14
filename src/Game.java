@@ -55,7 +55,6 @@ public class Game  {
     private boolean changes = false;
     private boolean CYCA = false;
     private boolean IB = false;
-
     private static boolean advantages = true;
     private ArrayList<String> confessionalSays = new ArrayList<>();
     private static ArrayList<Player> redemptionPlayers = new ArrayList<>();
@@ -95,6 +94,7 @@ public class Game  {
     private int juryNum = 0;
     private int numImmune = 0;
     private int lostTribe = 0;
+    private static int playersLeft = 0;
     private HashMap<Integer, String> indChallenges = new HashMap<>();
     private ArrayList<String> votingConfessionals = new ArrayList<>();
     private HashMap<String, String> indChalDescriptions = new HashMap<>();
@@ -121,138 +121,28 @@ public class Game  {
         Scanner throwAway = new Scanner(System.in);
         Game a = new Game();
         a.gameSetUp();
-        while (players.size() > 11) {
-            if (round != 0 && tribeSwap) {
-                a.tribeSwap(swaptype);
-            }
-            if (RI && redemptionPlayers.size() >= 3) {
-                a.redemptionIsland();
-            }
-            a.campLife();
-            a.rewardChallenge();
-            a.confessional();
-            if (EI) {
-                a.exileIsland();
-            }
-            a.campLife();
-            if(Journey && round%2 == 1){
-                a.journey();
-            }
-            int advChance = r.nextInt(5) + 1;
-            if (advChance == 4 && advantages) {
-                a.advantageFind(players.get(r.nextInt(players.size())),false);
-            }
-            a.idolAndAdvSummary();
-            a.tribalImmunityChallenge();
-            int fa = r.nextInt(10)+1;
-            if(fa > 6){
-                a.formAlliance(tribes.get(r.nextInt(tribes.size())));
-            }else if(fa == 5){
-                if(alliances.size()>1) {
-                    a.allianceDissolve(alliances.get(r.nextInt(alliances.size())));
-                }else if(alliances.size()==1){
-                    a.allianceDissolve(alliances.get(0));
-                }
-            }
-            a.allianceSummary();
-            a.confessional();
-            int ImmuneChance = r.nextInt(5)+1;
-            if (ImmuneChance == 4 && Idol) {
-                a.idolFind(players.get(r.nextInt(players.size())), false);
-            }
-            if (!a.medevacOrQuit()) {
-                a.tribalCouncil(losingTribe);
-            }
-            for (int i = 0; i < numTribes; i++) {
-                System.out.println(tribes.get(i).toString());
-            }
-            if(a.sizeCheck()){
-                a.dissolve();
-            }
+        playersLeft = numPlayers;
+        while (playersLeft > 11) {
+            a.episode(a);
+            playersLeft--;
         }
         if(ETM){
             a.tribalCouncil(a.earnTheMerge());
+            playersLeft--;
         }
         a.merge();
         a.confessional();
         if (EOE) {
             a.edgeOfExtinction();
+            playersLeft++;
         }
         if (RI) {
             a.RedemptionReturn();
-        } //fill
-        while (players.size() > 4) {
-            if (RI && redemptionPlayers.size() >= 3) {
-                a.redemptionIsland();
-            }
-            a.campLife();
-            if(players.size()==7 && Auction){
-                a.survivorAuction();
-                if(AuctExile){
-                    a.exileIsland();
-                }
-            }else {
-                a.rewardChallenge();
-            }
-            a.confessional();
-            if (EI) {
-                a.exileIsland();
-            }
-            a.campLife();
-            if(split && players.size()==10){
-                int ImmuneChance = r.nextInt(5)+1;
-                if (ImmuneChance == 4 && players.size() > 4 && Idol) {
-                    a.idolFind(players.get(r.nextInt(players.size())), false);
-                }
-                int advChance = r.nextInt(5) + 1;
-                if (advChance == 4 && players.size() > 4 && advantages) {
-                    a.advantageFind(players.get(r.nextInt(players.size())),false);
-                }
-                a.idolAndAdvSummary();
-                a.splitImmunityChallenge();
-                int fa = r.nextInt(10)+1;
-                if(fa > 6){
-                    a.formAlliance(losingTribe);
-                }else if(fa == 5){
-                    if(alliances.size()>1) {
-                        a.allianceDissolve(alliances.get(r.nextInt(alliances.size())));
-                    }else if(alliances.size()==1){
-                        a.allianceDissolve(alliances.get(0));
-                    }
-                }
-                a.allianceSummary();
-                a.confessional();
-            }
-            else {
-                int advChance = r.nextInt(5) + 1;
-                if (advChance == 4 && players.size() > 4 && advantages) {
-                    a.advantageFind(players.get(r.nextInt(players.size())),false);
-                }
-                a.idolAndAdvSummary();
-                a.individualImmunityChallenge();
-                int fa = r.nextInt(10)+1;
-                if(fa > 6){
-                    a.formAlliance(losingTribe);
-                }else if(fa == 5){
-                    if(alliances.size()>1) {
-                        a.allianceDissolve(alliances.get(r.nextInt(alliances.size())));
-                    }else if(alliances.size()==1){
-                        a.allianceDissolve(alliances.get(0));
-                    }
-                }
-                a.allianceSummary();
-                a.confessional();
-                int ImmuneChance = r.nextInt(5)+1;
-                if (ImmuneChance == 4 && players.size() > 4 && Idol) {
-                    a.idolFind(players.get(r.nextInt(players.size())), false);
-                }
-                a.tribalCouncil(losingTribe);
-            }
-            System.out.println(tribes.get(0).toString());
-            if (RI && players.size() == 4) {
-                a.RedemptionReturn();
-                break;
-            }
+            playersLeft++;
+        }
+        while (playersLeft > 4) {
+            a.episode(a);
+            playersLeft--;
         }
         if (RI) {
             a.idolAndAdvSummary();
@@ -260,6 +150,7 @@ public class Game  {
             a.allianceSummary();
             a.confessional();
             a.tribalCouncil(losingTribe);
+            playersLeft--;
             System.out.println(tribes.get(0).toString());
         }
         if (EOE) {
@@ -269,6 +160,7 @@ public class Game  {
             a.allianceSummary();
             a.confessional();
             a.tribalCouncil(losingTribe);
+            playersLeft--;
             System.out.println(tribes.get(0).toString());
         }
         if (twoOrThree) {
@@ -320,6 +212,102 @@ public class Game  {
 
     public void setAuction(boolean auction) {
         Auction = auction;
+    }
+
+    public void episode(Game a) throws IOException {
+        if (round != 0 && tribeSwap && !merged) {
+            a.tribeSwap(swaptype);
+        }
+        if (RI && redemptionPlayers.size() >= 3) {
+            a.redemptionIsland();
+        }
+        a.campLife();
+        if(playersLeft==7 && Auction){
+            a.survivorAuction();
+            if(AuctExile){
+                a.exileIsland();
+            }
+        }else {
+            a.rewardChallenge();
+        }
+        a.confessional();
+        if (EI) {
+            a.exileIsland();
+        }
+        a.campLife();
+        if (Journey && round % 2 == 1) {
+            a.journey();
+        }
+        //split
+        if(split && players.size()==10){
+            int ImmuneChance = r.nextInt(5)+1;
+            if (ImmuneChance == 4 && players.size() > 4 && Idol) {
+                a.idolFind(players.get(r.nextInt(players.size())), false);
+            }
+            int advChance = r.nextInt(5) + 1;
+            if (advChance == 4 && players.size() > 4 && advantages) {
+                a.advantageFind(players.get(r.nextInt(players.size())),false);
+            }
+            a.idolAndAdvSummary();
+            a.splitImmunityChallenge();
+            playersLeft--;
+            int fa = r.nextInt(10)+1;
+            if(fa > 6){
+                a.formAlliance(losingTribe);
+            }else if(fa == 5){
+                if(alliances.size()>1) {
+                    a.allianceDissolve(alliances.get(r.nextInt(alliances.size())));
+                }else if(alliances.size()==1){
+                    a.allianceDissolve(alliances.get(0));
+                }
+            }
+            a.allianceSummary();
+            a.confessional();
+        }
+        else {
+            int advChance = r.nextInt(5) + 1;
+            if (advChance == 4 && advantages) {
+                a.advantageFind(players.get(r.nextInt(players.size())), false);
+            }
+            a.idolAndAdvSummary();
+            if(!merged){
+                a.tribalImmunityChallenge();
+            }else{
+                a.individualImmunityChallenge();
+            }
+            int fa = r.nextInt(10) + 1;
+            if (fa > 6) {
+                a.formAlliance(tribes.get(r.nextInt(tribes.size())));
+            } else if (fa == 5) {
+                if (alliances.size() > 1) {
+                    a.allianceDissolve(alliances.get(r.nextInt(alliances.size())));
+                } else if (alliances.size() == 1) {
+                    a.allianceDissolve(alliances.get(0));
+                }
+            }
+            a.allianceSummary();
+            a.confessional();
+            int ImmuneChance = r.nextInt(5) + 1;
+            if (ImmuneChance == 4 && Idol) {
+                a.idolFind(players.get(r.nextInt(players.size())), false);
+            }
+            if (!a.medevacOrQuit()) {
+                a.tribalCouncil(losingTribe);
+            }
+            for (int i = 0; i < numTribes; i++) {
+                System.out.println(tribes.get(i).toString());
+            }
+            if (a.sizeCheck()) {
+                a.dissolve();
+            }
+        }
+        if (RI && playersLeft == 4) {
+            a.RedemptionReturn();
+            playersLeft++;
+        }
+        System.out.println("Jeff Probst: Type next to continue to the next episode.");
+        Scanner dump = new Scanner(System.in);
+        dump.nextLine();
     }
 
     public void Run(Game a) throws IOException {
