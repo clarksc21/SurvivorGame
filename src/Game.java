@@ -308,7 +308,7 @@ public class Game  {
         System.out.println("Jeff Probst: Type next to continue to the next episode.");
         Scanner dump = new Scanner(System.in);
         dump.nextLine();
-    }
+    }//
 
     public void Run(Game a) throws IOException {
         sim = true;

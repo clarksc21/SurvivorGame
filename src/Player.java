@@ -6,7 +6,7 @@ import java.util.Random;
 public class Player {
     private String name;
     private static final String ANSI_WHITE = "\u001B[0m";
-    private int num;
+    private int num;//
     private String mindset;
     private ArrayList<String> mindsets = new ArrayList<>();
     private boolean immune;

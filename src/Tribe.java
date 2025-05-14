@@ -87,7 +87,7 @@ public class Tribe {
         this.tribePlayers = tribePlayers;
         this.boost = boost;
 //        this.color = tribeColors();
-    }
+    }//
 
     @Override
     public String toString() {

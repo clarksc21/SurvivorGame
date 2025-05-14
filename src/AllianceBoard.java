@@ -18,7 +18,7 @@ public class AllianceBoard {
     public static void main(String[] args) {
         AllianceBoard a = new AllianceBoard(16);
         System.out.println(a.toString(16));
-    }
+    }//
 
     public int getSpot(int i, int j){
         return allianceBoard[i][j];

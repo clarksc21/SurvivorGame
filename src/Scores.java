@@ -10,7 +10,7 @@ public class Scores {
     public void setScore(int score) {
         this.score = score;
     }
-
+//
     public Player getPlayer() {
         return player;
     }

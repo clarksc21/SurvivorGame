@@ -153,7 +153,7 @@ public class Alliance{
     }
 
     public Alliance(){
-    }
+    }//
 
     public StringBuilder memberPrint(){
         StringBuilder m = new StringBuilder();
