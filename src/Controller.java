@@ -2,6 +2,7 @@
 //npx create-react-app survivor-ui --template typescript
 //cd survivor-ui
 //npm start
+//im going cry
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
